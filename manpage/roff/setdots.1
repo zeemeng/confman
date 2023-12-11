@@ -122,6 +122,10 @@ SETDOTS_PROMPT, this variable is available in the execution environment
 of package-specific custom scripts (see \f[I]FILES\f[R]).
 .RE
 .SH ENVIRONMENT
+\f[B]setdots\f[R] sets the \f[I]export\f[R] attribute on the following
+shell variables, therefore these are available in the execution
+environment of package-specific custom scripts (see \f[I]FILES\f[R])
+when such scripts are invoked by \f[B]setdots\f[R].
 .TP
 PKG_CONFIG_DEST
 The destination where symlinks of package data and configuration files
@@ -138,12 +142,6 @@ If both this variable and the \f[B]-m\f[R] option are not provided when
 this program is invoked, \f[B]setdots\f[R] will automatically attempt to
 select and use an appropriate package manager command, which is then
 assigned to PKG_MANAGER.
-.RS
-.PP
-\f[B]setdots\f[R] sets the \f[I]export\f[R] variable attribute on
-PKG_MANAGER, therefore this variable is available in the execution
-environment of package-specific custom scripts (see \f[I]FILES\f[R]).
-.RE
 .TP
 PKG_REPO
 The path to the package repository directory.
@@ -176,9 +174,6 @@ Any invalid value is replaced with \f[I]1\f[R].
 If the option \f[B]-p\f[R] is specified and has a valid argument
 \f[I]n\f[R], it overrides the value set for this variable.
 SETDOTS_PROMPT would then be reassigned to the value of \f[I]n\f[R].
-\f[B]setdots\f[R] sets the \f[I]export\f[R] variable attribute on
-SETDOTS_PROMPT, therefore this variable is available in the execution
-environment of package-specific custom scripts (see \f[I]FILES\f[R]).
 .RE
 .SH FILES
 .TP

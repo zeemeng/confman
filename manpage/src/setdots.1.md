@@ -62,13 +62,13 @@ setdots - manage and configure packages
     If a valid value of *n* is specified, it is assigned to the variable SETDOTS_PROMPT. If both the **-p** option and the SETDOTS_PROMPT variable is set when this program is invoked, a valid value of *n* overrides the value of the variable. Since **setdots** sets the *export* variable attribute on SETDOTS_PROMPT, this variable is available in the execution environment of package-specific custom scripts (see *FILES*).
 
 # ENVIRONMENT
+**setdots** sets the *export* attribute on the following shell variables, therefore these are available in the execution environment of package-specific custom scripts (see *FILES*) when such scripts are invoked by **setdots**.
+
 PKG_CONFIG_DEST
 :   The destination where symlinks of package data and configuration files are created at by the default package configuration operation. By default, it is set to the value of the HOME environment variable.
 
 PKG_MANAGER
 :   The back-end package manager to use for installation and uninstallation. Can be an absolute path to an executable or a program name if it can be found in PATH. Its value is overriden be the **-m** option's argument if the later is specified. If both this variable and the **-m** option are not provided when this program is invoked, **setdots** will automatically attempt to select and use an appropriate package manager command, which is then assigned to PKG_MANAGER.
-
-    **setdots** sets the *export* variable attribute on PKG_MANAGER, therefore this variable is available in the execution environment of package-specific custom scripts (see *FILES*).
 
 PKG_REPO
 :   The path to the package repository directory. By default, it is set to *packages/* within the directory where the **setdots** executable resides. The repository contains a child directory for each package that could be provided to **setdots** as a selected package. Such a directory must have the same name as its associated package, and may contain custom installation scripts, configuration scripts, and data (see **FILES**).
@@ -76,7 +76,7 @@ PKG_REPO
 SETDOTS_PROMPT
 :   The amount/level of prompts presented by **setdots**. It may take one of three values: *0*, *1*, or *2*. If set to *0*, no prompt or interactive inquiry is generated for all default operations performed by **setdots**. If set to *1* (the default value), minimal prompting is presented. For example, a prompt is presented to validate the set of packages on which to perform certain actions. If set to *2*, extensive prompting is enable for default operations. In which case, a confirmation prompt is presented before any operation is performed by the selected back-end package manager for every target package. Any invalid value is replaced with *1*.
 
-    If the option **-p** is specified and has a valid argument *n*, it overrides the value set for this variable. SETDOTS_PROMPT would then be reassigned to the value of *n*. **setdots** sets the *export* variable attribute on SETDOTS_PROMPT, therefore this variable is available in the execution environment of package-specific custom scripts (see *FILES*).
+    If the option **-p** is specified and has a valid argument *n*, it overrides the value set for this variable. SETDOTS_PROMPT would then be reassigned to the value of *n*.
 
 # FILES
 *$PKG_REPO/\<package_name\>/*
