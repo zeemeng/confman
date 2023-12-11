@@ -1,11 +1,29 @@
 #!/usr/bin/env sh
 
+recursive_ln() (
+	SRC="$(readlink -f "$1")"
+	DEST="$2"
+
+	if [ -d "$SRC" ]; then
+		NEW_DEST="$DEST/$(basename "$SRC")"
+		mkdir -pv "$NEW_DEST"
+
+		ls -1A "$SRC" | while read -r SRC_ITEM
+			do recursive_ln "$SRC/$SRC_ITEM" "$NEW_DEST"; done
+	else
+		ln -sf "$SRC" "$DEST"
+	fi
+)
+
 DATA_DIR="$PKG_REPO/$PKG/data"
 
 if [ -d "$DATA_DIR" ] && [ -r "$DATA_DIR" ]; then
 	while read CONFIG; do
 		# !! NON-POSIX feature available in BSD, GNU/Linux and MacOS: options -s and -v for command "cp"
-		cp -Rsv "$DATA_DIR/$CONFIG" "$HOME"
+		# Disabled, since MacOS 14.1 has a bug with the "cp" utility where the "-s" option does not work as expected
+		#cp -Rsv "$DATA_DIR/$CONFIG" "$HOME"
+
+		recursive_ln "$DATA_DIR/$CONFIG" "$HOME"
 	done <<-EOF
 	$(ls -1A "$DATA_DIR")
 	EOF
