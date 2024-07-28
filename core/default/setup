@@ -23,7 +23,7 @@ if [ -d "$DATA_DIR" ] && [ -r "$DATA_DIR" ]; then
 		# Disabled, since MacOS 14.1 has a bug with the "cp" utility where the "-s" option does not work as expected
 		#cp -Rsv "$DATA_DIR/$CONFIG" "$HOME"
 
-		recursive_ln "$DATA_DIR/$CONFIG" "$HOME"
+		recursive_ln "$DATA_DIR/$CONFIG" "$PKG_CONFIG_DEST"
 	done <<-EOF
 	$(ls -1A "$DATA_DIR")
 	EOF

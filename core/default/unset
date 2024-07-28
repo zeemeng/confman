@@ -4,8 +4,8 @@ DATA_DIR="$PKG_REPO/$PKG/data"
 
 if [ -d "$DATA_DIR" ] && [ -r "$DATA_DIR" ]; then
 	while read CONFIG; do
-		echo "Removing config data at: $HOME/$CONFIG"
-		rm -rf "$HOME/$CONFIG"
+		echo "Removing config data at: $PKG_CONFIG_DEST/$CONFIG"
+		rm -rf "$PKG_CONFIG_DEST/$CONFIG"
 	done <<-EOF
 	$(ls -1A "$DATA_DIR")
 	EOF
