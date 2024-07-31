@@ -1,20 +1,32 @@
 #!/usr/bin/env sh
 
-# If PKG_MANAGER is initially empty, set a default value if appropriate
-select_default_pkg_manager() {
-	SUPPORTED_PKG_MANAGER="apt pacman brew"
-
-	[ -n "$PKG_MANAGER" ] && echo "$PKG_MANAGER" && return
-	for MGR in $SUPPORTED_PKG_MANAGER; do
-		command -v "$MGR" >/dev/null 2>&1 && printf "$MGR" && return
-	done
-}
-
-# If PKG_MANAGER does not denote an invocable command, notify and exit
 validate_pkg_manager() {
-	! command -v "$PKG_MANAGER" >/dev/null 2>&1 &&
-		echo "ERROR: No suitable package manager was found." >&2 &&
+	_OS=$(uname -s)
+	MINGW64_MGR="pacman"
+	DARWIN_MGR="brew" # Can be a space-separated list
+	LINUX_MGR="apt pacman brew" # Can be a space-separated list
+
+
+	if [ -z "$PKG_MANAGER" ]; then
+		case "$_OS" in
+			MINGW64*) PKG_MANAGER="$MINGW64_MGR";;
+			Darwin)
+				for MGR in $DARWIN_MGR; do
+					if command -v "$MGR" >/dev/null; then PKG_MANAGER="$MGR"; fi
+				done;;
+			*)
+				for MGR in $LINUX_MGR; do
+					if command -v "$MGR" >/dev/null; then PKG_MANAGER="$MGR"; fi
+				done;;
+		esac
+	fi
+
+	if ! command -v "$PKG_MANAGER" >/dev/null; then
+		echo "ERROR: No suitable package manager was found." >&2
 		exit 1
+	fi
+
+	unset _OS LINUX_MGR DARWIN_MGR MINGW64_MGR
 }
 
 # Update/sync back-end package manager repositories with external sources. Set options and environment variables
