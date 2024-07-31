@@ -4,34 +4,33 @@ set -e
 
 
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
-
-EXEC_DIR="$(dirname "$(realpath "$0")")"
-. "$EXEC_DIR/core/pkg_manager.sh"
-. "$EXEC_DIR/core/utils.sh"
+SETDOTS_DIR="$(dirname "$(realpath "$0")")"
+. "$SETDOTS_DIR/core/pkg_manager.sh"
+. "$SETDOTS_DIR/core/utils.sh"
 
 
 #--- LOCAL UTILITIES ---#
 
 # Validate that the program is invoked appropriately and that the source directory could be found
-validate_exec_path() {
+validate_setdots_path() {
 	EXEC_NAME=setdots
-	EXEC_PATH="$(realpath "$0")"
+	SETDOTS_PATH="$(realpath "$0")"
 
-	if [ ! -f "$EXEC_PATH" ] || [ "$(basename "$EXEC_PATH")" != "$EXEC_NAME" ]; then
+	if [ ! -f "$SETDOTS_PATH" ] || [ "$(basename "$SETDOTS_PATH")" != "$EXEC_NAME" ]; then
 		printf 'ERROR: The location of the `setdots` scripts cannot be determined. Are you sourcing the program via the `.` built-in? Please try executing `setdots` as a command or pass it as the parameter to a POSIX shell.\n' >&2
 		sleep 2
 		exit 1
 	fi
 
-	unset EXEC_NAME EXEC_PATH
+	unset EXEC_NAME
 }
 
 select_pkg_repo() {
 	if [ -z "$PKG_REPO" ]; then # PKG_REPO not specified
-		printf "$EXEC_DIR/packages"
+		printf "$SETDOTS_DIR/packages"
 	elif ! { [ -d "$PKG_REPO" ] && [ -x "$PKG_REPO" ]; }; then # PKG_REPO specified, but cannot be read
-		printf "SETDOTS >>> Cannot read from the specified package repository. Defaulting to $EXEC_DIR/packages\n" >&2
-		printf "$EXEC_DIR/packages"
+		printf "SETDOTS >>> Cannot read from the specified package repository. Defaulting to $SETDOTS_DIR/packages\n" >&2
+		printf "$SETDOTS_DIR/packages"
 	else
 		printf "$PKG_REPO"
 	fi
@@ -48,11 +47,12 @@ set_prompt_level() {
 
 #--- VALIDATE AND SET VARIABLES ---#
 
-validate_exec_path
+validate_setdots_path
 validate_pkg_manager
 [ -d "$PKG_CONFIG_DEST" ] || PKG_CONFIG_DEST="$HOME"
 export PKG_CONFIG_DEST
 export PKG_MANAGER
+export SETDOTS_DIR
 export PKG_REPO="$(select_pkg_repo)"
 export SETDOTS_PROMPT="$(set_prompt_level)"
 

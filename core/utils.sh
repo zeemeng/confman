@@ -18,7 +18,7 @@ print_exit_version() {
 }
 
 show_manpage_exit() {
-	man "$EXEC_DIR/manpage/roff/setdots.1"
+	man "$SETDOTS_DIR/manpage/roff/setdots.1"
 	exit 0
 }
 

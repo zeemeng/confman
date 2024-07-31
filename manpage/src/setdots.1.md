@@ -64,6 +64,9 @@ setdots - manage and configure packages
 # ENVIRONMENT
 **setdots** sets the *export* attribute on the following shell variables, therefore these are available in the execution environment of package-specific custom scripts (see *FILES*) when such scripts are invoked by **setdots**.
 
+PKG
+:   The name of the package currently being processed by **setdots**.
+
 PKG_CONFIG_DEST
 :   The destination where symlinks of package data and configuration files are created at by the default package configuration operation. By default, it is set to the value of the HOME environment variable.
 
@@ -77,6 +80,9 @@ SETDOTS_PROMPT
 :   The amount/level of prompts presented by **setdots**. It may take one of three values: *0*, *1*, or *2*. If set to *0*, no prompt or interactive inquiry is generated for all default operations performed by **setdots**. If set to *1* (the default value), minimal prompting is presented. For example, a prompt is presented to validate the set of packages on which to perform certain actions. If set to *2*, extensive prompting is enable for default operations. In which case, a confirmation prompt is presented before any operation is performed by the selected back-end package manager for every target package. Any invalid value is replaced with *1*.
 
     If the option **-p** is specified and has a valid argument *n*, it overrides the value set for this variable. SETDOTS_PROMPT would then be reassigned to the value of *n*.
+
+SETDOTS_DIR
+:   The directory portion of the canonicalized pathname (as returned by the **realpath** utility) for the **setdots** executable. 
 
 # FILES
 *$PKG_REPO/\<package_name\>/*
