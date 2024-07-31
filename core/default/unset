@@ -1,13 +1,34 @@
 #!/usr/bin/env sh
 
+recursive_unlink() (
+	SRC="$(readlink -f "$1")"
+	DEST="$2"
+	CONFIG_NAME="$(basename "$SRC")"
+
+	if [ -d "$SRC" ]; then
+		NEW_DEST="$DEST/$CONFIG_NAME"
+
+		ls -1A "$SRC" | while read -r SRC_ITEM; do
+			recursive_unlink "$SRC/$SRC_ITEM" "$NEW_DEST"
+		done
+	else
+		# Remove config file at destination dir
+		echo "Removing config data at: $DEST/$CONFIG_NAME"
+		rm -f "$DEST/$CONFIG_NAME"
+
+		# Delete destination dir if empty after removing config file
+		if [ -z "$(ls -A "$DEST")" ]; then
+			echo "Removing empty target config dir at: $DEST"
+			rmdir "$DEST"
+		fi
+	fi
+)
+
 DATA_DIR="$PKG_REPO/$PKG/data"
 
-if [ -d "$DATA_DIR" ] && [ -r "$DATA_DIR" ]; then
-	while read CONFIG; do
-		echo "Removing config data at: $PKG_CONFIG_DEST/$CONFIG"
-		rm -rf "$PKG_CONFIG_DEST/$CONFIG"
-	done <<-EOF
-	$(ls -1A "$DATA_DIR")
-	EOF
+if [ -d "$DATA_DIR" ]; then
+	ls -1A "$DATA_DIR" | while read CONFIG; do
+		recursive_unlink "$DATA_DIR/$CONFIG" "$PKG_CONFIG_DEST"
+	done
 fi
 
