@@ -15,12 +15,12 @@ recursive_unlink() (
 		# Remove config file at destination dir
 		echo "Removing config data at: $DEST/$CONFIG_NAME"
 		rm -f "$DEST/$CONFIG_NAME"
+	fi
 
-		# Delete destination dir if empty after removing config file
-		if [ -z "$(ls -A "$DEST")" ]; then
-			echo "Removing empty target config dir at: $DEST"
-			rmdir "$DEST"
-		fi
+	# Delete destination dir if empty after removing config file
+	if [ -z "$(ls -A "$DEST")" ]; then
+		echo "Removing empty target config dir at: $DEST"
+		rmdir "$DEST"
 	fi
 )
 

@@ -141,7 +141,10 @@ execute_script() (
 
 	if [ ! -x "$SCRIPT" ]; then
 		echo "\nSETDOTS >>> Adding execute permission to $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" file for \"$PKG\""
-		chmod +x "$SCRIPT"
+		if ! chmod ug+x "$SCRIPT" 2>/dev/null; then
+			printf "User '$(whoami)' does not have permission to 'chmod' file '$SCRIPT'. Requesting 'chmod ug+x' on file with 'sudo'..\n" >&2
+			sudo chmod ug+x "$SCRIPT"
+		fi
 	fi
 
 	# Invoke the specified script as a command to enable execution by a different interpreter or as a standalone executable

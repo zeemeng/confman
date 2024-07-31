@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+
+EXEC_DIR='/usr/local/bin'
+MAN_DIR='/usr/local/share/man/man1'
+
+printf "Requesting 'sudo' permission to perform the following actions:
+sudo mkdir -p $EXEC_DIR
+sudo ln -sf $SETDOTS_DIR/setdots $EXEC_DIR
+"
+sudo mkdir -p "$EXEC_DIR"
+sudo ln -sf "$SETDOTS_DIR/setdots" "$EXEC_DIR"
+printf "SETDOTS >>> Created symlink for 'setdots' executable: $EXEC_DIR/setdots --> $SETDOTS_DIR/setdots\n"
+
+printf "Requesting 'sudo' permission to perform the following actions:
+sudo mkdir -p $MAN_DIR
+sudo ln -sf $SETDOTS_DIR/manpage/roff/setdots.1 $MAN_DIR
+"
+sudo mkdir -p "$MAN_DIR"
+sudo ln -sf "$SETDOTS_DIR/manpage/roff/setdots.1" "$MAN_DIR"
+printf "SETDOTS >>> Created symlink for 'setdots' man page: $MAN_DIR/setdots.1 --> $SETDOTS_DIR/manpage/roff/setdots.1\n"
+
