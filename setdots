@@ -20,12 +20,12 @@ validate_exec_path() {
 
 select_pkg_repo() {
 	if [ -z "$PKG_REPO" ]; then # PKG_REPO not specified
-		echo "$EXEC_DIR/packages"
+		printf "$EXEC_DIR/packages"
 	elif ! { [ -d "$PKG_REPO" ] && [ -x "$PKG_REPO" ]; }; then # PKG_REPO specified, but cannot be read
-		echo "SETDOTS >>> Cannot read from the specified package repository. Defaulting to $EXEC_DIR/packages" >&2
-		echo "$EXEC_DIR/packages"
+		printf "SETDOTS >>> Cannot read from the specified package repository. Defaulting to $EXEC_DIR/packages\n" >&2
+		printf "$EXEC_DIR/packages"
 	else
-		echo "$PKG_REPO"
+		printf "$PKG_REPO"
 	fi
 }
 
@@ -80,7 +80,7 @@ while getopts "vhHiIsuUrlf:m:p:" OPT; do
 	m) PKG_MANAGER="$OPTARG";;
 	p) [ "$OPTARG" = '0' ] || [ "$OPTARG" = '1' ] || [ "$OPTARG" = '2' ] &&
 		SETDOTS_PROMPT="$OPTARG" ||
-		printf "SETDOTS >>> Invalid argument to option \"-f\" is detected and ignored\n" >&2;;
+		printf "SETDOTS >>> Invalid argument to option \"-p\" is detected and ignored\n" >&2;;
 	?) print_exit_usage;;
 	esac
 done
