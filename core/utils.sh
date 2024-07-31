@@ -34,20 +34,28 @@ append_to_selected_pkgs() {
 	echo "$PKG" | grep -q "[^[:space:]]" || return
 
 	# Add PKG to SELECTED_PKGS on a new line, suffixed with ":nis"
-	[ -f "$PKG_REPO/$PKG/noinstall" ] && [ -f "$PKG_REPO/$PKG/nosetup" ] &&
-		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:nis" && return
+	if [ -f "$PKG_REPO/$PKG/noinstall" ] && [ -f "$PKG_REPO/$PKG/nosetup" ]; then
+		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:nis"
+		return
+	fi
 
 	# Add PKG to SELECTED_PKGS on a new line, suffixed with ":ni"
-	[ -f "$PKG_REPO/$PKG/noinstall" ] &&
-		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:ni" && return
+	if [ -f "$PKG_REPO/$PKG/noinstall" ]; then
+		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:ni"
+		return
+	fi
 
 	# Add PKG to SELECTED_PKGS on a new line, suffixed with ":ns"
-	[ -f "$PKG_REPO/$PKG/nosetup" ] &&
-		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:ns" && return
+	if [ -f "$PKG_REPO/$PKG/nosetup" ]; then
+		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:ns"
+		return
+	fi
 
 	# Add PKG to SELECTED_PKGS on a new line, suffixed with ":is"
-	[ -d "$PKG_REPO/$PKG" ] &&
-		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:is" && return
+	if [ -d "$PKG_REPO/$PKG" ]; then
+		SELECTED_PKGS="${SELECTED_PKGS}${NEW_LINE}${PKG}:is"
+		return
+	fi
 }
 
 print_cannot_read_package_list_file() {
@@ -61,12 +69,12 @@ read_selected_packages() {
 	for PKG in "$@"; do append_to_selected_pkgs; done
 
 	# If specified file exists and can be read, select packages from file line-by-line
-	if [ -f "$f" ] && [ -r "$f" ]
-	then while read PKG; do append_to_selected_pkgs; done < "$f"
+	if [ -f "$f" ] && [ -r "$f" ]; then
+		while read PKG; do append_to_selected_pkgs; done < "$f"
 
 	# Specified file exists, but cannot be read
-	elif [ "$f" ]
-	then print_cannot_read_package_list_file
+	elif [ "$f" ]; then
+		print_cannot_read_package_list_file;
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
@@ -101,11 +109,11 @@ print_exit_selected_packages() {
 		if [ -f "$PKG_REPO/$PKG/noinstall" ]; then
 			INSTALL_COLUMN="NO INSTALL"
 		else
-			[ -f "$PKG_REPO/$PKG/install" ] && INSTALL_COLUMN="CUSTOM" || INSTALL_COLUMN="DEFAULT"
-			[ -f "$PKG_REPO/$PKG/preinstall" ] && INSTALL_COLUMN="${INSTALL_COLUMN}, PRE"
-			[ -f "$PKG_REPO/$PKG/postinstall" ] && INSTALL_COLUMN="${INSTALL_COLUMN}, POST"
+			if [ -f "$PKG_REPO/$PKG/install" ]; then INSTALL_COLUMN="CUSTOM"; else INSTALL_COLUMN="DEFAULT"; fi
+			if [ -f "$PKG_REPO/$PKG/preinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, PRE"; fi
+			if [ -f "$PKG_REPO/$PKG/postinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, POST"; fi
 
-			[ -f "$PKG_REPO/$PKG/uninstall" ] && UNINSTALL_COLUMN="CUSTOM" || UNINSTALL_COLUMN="DEFAULT"
+			if [ -f "$PKG_REPO/$PKG/uninstall" ]; then UNINSTALL_COLUMN="CUSTOM"; else UNINSTALL_COLUMN="DEFAULT"; fi
 		fi
 		printf "%-20s%-20s" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN"
 
@@ -114,11 +122,11 @@ print_exit_selected_packages() {
 		if [ -f "$PKG_REPO/$PKG/nosetup" ]; then
 			CONFIG_COLUMN="NO SETUP"
 		else
-			[ -f "$PKG_REPO/$PKG/setup" ] && CONFIG_COLUMN="CUSTOM" || CONFIG_COLUMN="DEFAULT"
-			[ -f "$PKG_REPO/$PKG/presetup" ] && CONFIG_COLUMN="${CONFIG_COLUMN}, PRE"
-			[ -f "$PKG_REPO/$PKG/postsetup" ] && CONFIG_COLUMN="${CONFIG_COLUMN}, POST"
+			if [ -f "$PKG_REPO/$PKG/setup" ]; then CONFIG_COLUMN="CUSTOM"; else CONFIG_COLUMN="DEFAULT"; fi
+			if [ -f "$PKG_REPO/$PKG/presetup" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, PRE"; fi
+			if [ -f "$PKG_REPO/$PKG/postsetup" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, POST"; fi
 
-			[ -f "$PKG_REPO/$PKG/unset" ] && RM_CONFIG_COLUMN="CUSTOM" || RM_CONFIG_COLUMN="DEFAULT"
+			if [ -f "$PKG_REPO/$PKG/unset" ]; then RM_CONFIG_COLUMN="CUSTOM"; else RM_CONFIG_COLUMN="DEFAULT"; fi
 		fi
 		printf "%-20s%-20s" "$CONFIG_COLUMN" "$RM_CONFIG_COLUMN"
 
@@ -144,7 +152,7 @@ execute_custom_script() {
 		echo "SETDOTS >>> Custom \"$SCRIPT_NAME\" script DONE for \"$PKG\""
 	else
 		echo "ERROR >>> Error in custom \"$SCRIPT_NAME\" script for \"$PKG\"" >&2
-		[ "$NEXT_OPERATION" ] && echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2
+		if [ "$NEXT_OPERATION" ]; then echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2; fi
 	fi
 }
 
@@ -161,7 +169,7 @@ execute_default_script() {
  		echo "SETDOTS >>> Default \"$SCRIPT_NAME\" operation DONE for \"$PKG\""
  	else
  		echo "ERROR >>> Error in default \"$SCRIPT_NAME\" operation for \"$PKG\"" >&2
-		[ "$NEXT_OPERATION" ] && echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2
+		if [ "$NEXT_OPERATION" ]; then echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2; fi
  	fi
 }
 
@@ -175,7 +183,7 @@ prompt_confirmation() {
 install_selected_packages() {
 	# Find packages to be installed among SELECTED_PKGS
 	INSTALL_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ns$//p')"
-	[ -z "$INSTALL_PKGS" ] && return # If found none, return early
+	if [ -z "$INSTALL_PKGS" ]; then return; fi # If found none, return early
 	printf "\nSETDOTS >>> Packages to be installed:\n$INSTALL_PKGS\n\n"
 
 	# If SETDOTS_PROMPT is level 1 or level 2
@@ -190,18 +198,20 @@ install_selected_packages() {
 		DEFAULT_INSTALL="$EXEC_DIR/core/default/install"
 		POSTINSTALL="$PKG_REPO/$PKG/postinstall"
 
-		[ -f "$PREINSTALL" ] && execute_custom_script "$PKG" "$PREINSTALL" "install" < /dev/tty
-		[ -f "$CUSTOM_INSTALL" ] && 
-			execute_custom_script "$PKG" "$CUSTOM_INSTALL" "postinstall" < /dev/tty ||
+		if [ -f "$PREINSTALL" ]; then execute_custom_script "$PKG" "$PREINSTALL" "install" < /dev/tty; fi
+		if [ -f "$CUSTOM_INSTALL" ]; then
+			execute_custom_script "$PKG" "$CUSTOM_INSTALL" "postinstall" < /dev/tty
+		else
 			execute_default_script "$PKG" "$DEFAULT_INSTALL" "postinstall" < /dev/tty
-		[ -f "$POSTINSTALL" ] && execute_custom_script "$PKG" "$POSTINSTALL" < /dev/tty
+		fi
+		if [ -f "$POSTINSTALL" ]; then execute_custom_script "$PKG" "$POSTINSTALL" < /dev/tty; fi
 	done
 }
 
 configure_selected_packages() {
 	# Find packages to be configured among SELECTED_PKGS
 	SETUP_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ni$//p')"
-	[ -z "$SETUP_PKGS" ] && return # If found none, return early
+	if [ -z "$SETUP_PKGS" ]; then return; fi # If found none, return early
 	printf "\nSETDOTS >>> Packages to be configured:\n$SETUP_PKGS\n\n"
 
 	# If SETDOTS_PROMPT is level 1 or level 2
@@ -213,18 +223,20 @@ configure_selected_packages() {
 		DEFAULT_SETUP="$EXEC_DIR/core/default/setup"
 		POSTSETUP="$PKG_REPO/$PKG/postsetup"
 
-		[ -f "$PRESETUP" ] && execute_custom_script "$PKG" "$PRESETUP" "setup" < /dev/tty
-		[ -f "$CUSTOM_SETUP" ] &&
-			execute_custom_script "$PKG" "$CUSTOM_SETUP" "postsetup" < /dev/tty ||
+		if [ -f "$PRESETUP" ]; then execute_custom_script "$PKG" "$PRESETUP" "setup" < /dev/tty; fi
+		if [ -f "$CUSTOM_SETUP" ]; then
+			execute_custom_script "$PKG" "$CUSTOM_SETUP" "postsetup" < /dev/tty
+		else
 			execute_default_script "$PKG" "$DEFAULT_SETUP" "postsetup" < /dev/tty
-		[ -f "$POSTSETUP" ] && execute_custom_script "$PKG" "$POSTSETUP" < /dev/tty
+		fi
+		if [ -f "$POSTSETUP" ]; then execute_custom_script "$PKG" "$POSTSETUP" < /dev/tty; fi
 	done
 }
 
 uninstall_selected_packages() {
 	# Find packages to be uninstalled among SELECTED_PKGS
 	UNINSTALL_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ns$//p')"
-	[ -z "$UNINSTALL_PKGS" ] && return # If found none, return early
+	if [ -z "$UNINSTALL_PKGS" ]; then return; fi # If found none, return early
 	printf "\nSETDOTS >>> Packages to be uninstalled:\n$UNINSTALL_PKGS\n\n"
 
 	# If SETDOTS_PROMPT is level 1 or level 2
@@ -237,16 +249,18 @@ uninstall_selected_packages() {
 		CUSTOM_UNINSTALL="$PKG_REPO/$PKG/uninstall"
 		DEFAULT_UNINSTALL="$EXEC_DIR/core/default/uninstall"
 
-		[ -f "$CUSTOM_UNINSTALL" ] &&
-			execute_custom_script "$PKG" "$CUSTOM_UNINSTALL" < /dev/tty ||
+		if [ -f "$CUSTOM_UNINSTALL" ]; then
+			execute_custom_script "$PKG" "$CUSTOM_UNINSTALL" < /dev/tty
+		else
 			execute_default_script "$PKG" "$DEFAULT_UNINSTALL" < /dev/tty
+		fi
 	done
 }
 
 remove_configuration_for_selected_packages() {
 	# Find packages for which to remove configuration among SELECTED_PKGS
 	UNSET_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ni$//p')"
-	[ -z "$UNSET_PKGS" ] && return # If found none, return early
+	if [ -z "$UNSET_PKGS" ]; then return; fi # If found none, return early
 	printf "\nSETDOTS >>> Removing configuration for following packages:\n$UNSET_PKGS\n\n"
 
 	# If SETDOTS_PROMPT is level 1 or level 2
@@ -256,9 +270,11 @@ remove_configuration_for_selected_packages() {
 		CUSTOM_UNSET="$PKG_REPO/$PKG/unset"
 		DEFAULT_UNSET="$EXEC_DIR/core/default/unset"
 
-		[ -f "$CUSTOM_UNSET" ] &&
-			execute_custom_script "$PKG" "$CUSTOM_UNSET" < /dev/tty ||
+		if [ -f "$CUSTOM_UNSET" ]; then
+			execute_custom_script "$PKG" "$CUSTOM_UNSET" < /dev/tty
+		else
 			execute_default_script "$PKG" "$DEFAULT_UNSET" < /dev/tty
+		fi
 	done
 }
 

@@ -1,14 +1,21 @@
 #!/usr/bin/env sh
 
+set -e
+
+
 #--- LOCAL UTILITIES ---#
 # Validate that the program is invoked appropriately and that the source directory could be found
 validate_exec_path() {
 	EXEC_NAME=setdots
+	EXEC_PATH="$(realpath "$0")"
 
-	[ ! -f "$EXEC_PATH" ] || [ "$(basename "$EXEC_PATH")" != "$EXEC_NAME" ] &&
-	echo 'ERROR: The location of the `setdots` scripts cannot be determined. Are you sourcing the program via the `.` built-in? Please try executing `setdots` as a command or pass it as the parameter to a POSIX shell.' >&2 &&
-	sleep 2 &&
-	exit 1
+	if [ ! -f "$EXEC_PATH" ] || [ "$(basename "$EXEC_PATH")" != "$EXEC_NAME" ]; then
+		printf 'ERROR: The location of the `setdots` scripts cannot be determined. Are you sourcing the program via the `.` built-in? Please try executing `setdots` as a command or pass it as the parameter to a POSIX shell.\n' >&2
+		sleep 2
+		exit 1
+	fi
+
+	unset EXEC_NAME EXEC_PATH
 }
 
 select_pkg_repo() {
@@ -23,9 +30,10 @@ select_pkg_repo() {
 }
 
 set_prompt_level() {
-	if [ "$SETDOTS_PROMPT" = 0 ] || [ "$SETDOTS_PROMPT" = 1 ] || [ "$SETDOTS_PROMPT" = 2 ]
-	then printf "$SETDOTS_PROMPT"
-	else printf 1
+	if [ "$SETDOTS_PROMPT" = 0 ] || [ "$SETDOTS_PROMPT" = 1 ] || [ "$SETDOTS_PROMPT" = 2 ]; then
+		printf "$SETDOTS_PROMPT"
+	else
+		printf 1
 	fi
 }
 
@@ -82,27 +90,44 @@ shift $((OPTIND - 1))
 validate_pkg_manager
 
 # Take action and return early if any of the -v -h or -H options is specified
-[ "$v" ] && print_exit_version
+if [ "$v" ]; then
+	print_exit_version
+fi
 
-[ "$h" ] && print_exit_usage
+if [ "$h" ]; then
+	print_exit_usage
+fi
 
-[ "$H" ] && show_manpage_exit
+if [ "$H" ]; then
+	show_manpage_exit
+fi
 
 # Test for validity of option combinations
-{ [ "$i" ] || [ "$I" ] || [ "$s" ]; } && { [ "$u" ] || [ "$U" ] || [ "$r" ]; } && 
+if { [ "$i" ] || [ "$I" ] || [ "$s" ]; } && { [ "$u" ] || [ "$U" ] || [ "$r" ]; }; then
 	print_exit_invalid_options_combination
+fi
 
 # Read list of selected packages from parameters and repository
 read_selected_packages "$@"
 
 # Operate according to option(s) specified
-[ "$l" ] && print_exit_selected_packages
+if [ "$l" ]; then
+	print_exit_selected_packages
+fi
 
-[ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ] && install_selected_packages
+if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
+	install_selected_packages
+fi
 
-[ "$DEFAULT_OPERATION" ] || [ "$s" ] || [ "$I" ] && configure_selected_packages
+if [ "$DEFAULT_OPERATION" ] || [ "$s" ] || [ "$I" ]; then
+	configure_selected_packages
+fi
 
-[ "$u" ] || [ "$U" ] && uninstall_selected_packages
+if [ "$u" ] || [ "$U" ]; then
+	uninstall_selected_packages
+fi
 
-[ "$r" ] || [ "$U" ] && remove_configuration_for_selected_packages
+if [ "$r" ] || [ "$U" ]; then
+	remove_configuration_for_selected_packages
+fi
 
