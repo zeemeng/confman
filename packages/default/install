@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 
 [ "$SETDOTS_PROMPT" -le 1 ] && NO_PROMPT='--yes'
-[ "$PKG_MANAGER" = 'apt' ] && sudo apt $NO_PROMPT install "$PKG" && return
+[ "$PKG_MANAGER" = 'apt' ] && sudo apt $NO_PROMPT install "$PKG" && exit 0
 
 [ "$SETDOTS_PROMPT" -le 1 ] && NO_PROMPT='--noconfirm'
-[ "$PKG_MANAGER" = 'pacman' ] && sudo pacman -S $NO_PROMPT "$PKG" && return
+[ "$PKG_MANAGER" = 'pacman' ] && sudo pacman -S $NO_PROMPT "$PKG" && exit 0
 
 # brew does not prompt for confirmation before installing packages and does not seem to have options to force prompting
-[ "$PKG_MANAGER" = 'brew' ] && brew install "$PKG" && return
+[ "$PKG_MANAGER" = 'brew' ] && brew install "$PKG" && exit 0
 

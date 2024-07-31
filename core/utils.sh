@@ -58,10 +58,6 @@ append_to_selected_pkgs() {
 	fi
 }
 
-print_cannot_read_package_list_file() {
-	echo "ERROR >>> Cannot read package list file. Defaulting to select all packages from repository." >&2
-}
-
 read_selected_packages() {
 	SELECTED_PKGS=""; NEW_LINE="
 "
@@ -74,13 +70,13 @@ read_selected_packages() {
 
 	# Specified file exists, but cannot be read
 	elif [ "$f" ]; then
-		print_cannot_read_package_list_file;
+		printf "ERROR >>> Cannot read package list file. Defaulting to select all packages from repository.\n" >&2
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
 	if [ "$#" -eq 0 ] && [ ! "$f" ]; then
 		while read PKG; do
-			append_to_selected_pkgs
+			if [ "default" != "$PKG" ]; then append_to_selected_pkgs; fi
 		done <<-EOF
 		$(ls -1A "$PKG_REPO")
 		EOF
@@ -134,147 +130,75 @@ print_exit_selected_packages() {
 	done
 }
 
-execute_custom_script() {
-	PKG="$1"
-	SCRIPT="$2"
+execute_script() (
+	export PKG="$1" # Desc: package name
+	DEFAULT_OR_CUSTOM="$2" # Values: 'default' | 'custom'
+	SCRIPT="$3" # Desc: path to the file to execute
+	NEXT_OPERATION="$4" # Desc: Name of the subsequent operation to be performed
 	SCRIPT_NAME="$(basename "$SCRIPT")"
-	NEXT_OPERATION="$3"
 
-	echo "\nSETDOTS >>> Running custom \"$SCRIPT_NAME\" script for \"$PKG\""
+	echo "\nSETDOTS >>> Performing $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\""
 
 	if [ ! -x "$SCRIPT" ]; then
-		echo "\nSETDOTS >>> Adding execute permission to \"$SCRIPT_NAME\" script for \"$PKG\""
+		echo "\nSETDOTS >>> Adding execute permission to $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" file for \"$PKG\""
 		chmod +x "$SCRIPT"
 	fi
 
-	# Invoke the specified custom script as a command to enable execution by a different interpreter or as a standalone executable
+	# Invoke the specified script as a command to enable execution by a different interpreter or as a standalone executable
 	if "$SCRIPT"; then
-		echo "SETDOTS >>> Custom \"$SCRIPT_NAME\" script DONE for \"$PKG\""
+		echo "SETDOTS >>> SUCCESSFULLY performed "$DEFAULT_OR_CUSTOM" \"$SCRIPT_NAME\" for \"$PKG\""
 	else
-		echo "ERROR >>> Error in custom \"$SCRIPT_NAME\" script for \"$PKG\"" >&2
+		echo "ERROR >>> Error during "$DEFAULT_OR_CUSTOM" \"$SCRIPT_NAME\" for \"$PKG\"" >&2
 		if [ "$NEXT_OPERATION" ]; then echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2; fi
 	fi
-}
-
-execute_default_script() {
-	PKG="$1"
-	SCRIPT="$2"
-	SCRIPT_NAME="$(basename "$SCRIPT")"
-	NEXT_OPERATION="$3"
-
- 	echo "\nSETDOTS >>> Running default \"$SCRIPT_NAME\" operation for \"$PKG\""
- 	
-	# Dot source the specified default script to have access to previously defined variables
- 	if . "$SCRIPT"; then
- 		echo "SETDOTS >>> Default \"$SCRIPT_NAME\" operation DONE for \"$PKG\""
- 	else
- 		echo "ERROR >>> Error in default \"$SCRIPT_NAME\" operation for \"$PKG\"" >&2
-		if [ "$NEXT_OPERATION" ]; then echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2; fi
- 	fi
-}
+)
 
 prompt_confirmation() {
 	printf 'Are you sure you want to continue? (y)es / (n)o: '
 	read RESPONSE
-	echo "$RESPONSE" | grep -q "^[Yy]" && return 0
-	echo 'Aborting..' && return 1
+	case "$RESPONSE" in
+		Y*|y*) return 0;;
+		*) printf 'Aborting..\n' >&2; return 1;;
+	esac
+
+	unset RESPONSE
 }
 
-install_selected_packages() {
-	# Find packages to be installed among SELECTED_PKGS
-	INSTALL_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ns$//p')"
-	if [ -z "$INSTALL_PKGS" ]; then return; fi # If found none, return early
-	printf "\nSETDOTS >>> Packages to be installed:\n$INSTALL_PKGS\n\n"
-
-	# If SETDOTS_PROMPT is level 1 or level 2
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then prompt_confirmation || exit 1; fi
+dispatch_operations() {
+	OPERATION="$1" # Values: 'install' | 'setup' | 'uninstall' | 'unset'
 
 	# Update/sync back-end package manager repositories. Set options and environment variables
-	init_pkg_manager
+	if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'uninstall' ]; then init_pkg_manager; fi
 
-	echo "$INSTALL_PKGS" | while read PKG; do
-		PREINSTALL="$PKG_REPO/$PKG/preinstall" 
-		CUSTOM_INSTALL="$PKG_REPO/$PKG/install"
-		DEFAULT_INSTALL="$EXEC_DIR/core/default/install"
-		POSTINSTALL="$PKG_REPO/$PKG/postinstall"
+	# Find packages selected for the operation among SELECTED_PKGS
+	[ "$OPERATION" = 'install' ] && SED_EXPR='s/:is$//p; s/:ns$//p' || SED_EXPR='s/:is$//p; s/:ni$//p'
+	TARGET_PKGS="$(echo "$SELECTED_PKGS" | sed -n "$SED_EXPR")"
+	if [ -z "$TARGET_PKGS" ]; then return; fi
 
-		if [ -f "$PREINSTALL" ]; then execute_custom_script "$PKG" "$PREINSTALL" "install" < /dev/tty; fi
-		if [ -f "$CUSTOM_INSTALL" ]; then
-			execute_custom_script "$PKG" "$CUSTOM_INSTALL" "postinstall" < /dev/tty
-		else
-			execute_default_script "$PKG" "$DEFAULT_INSTALL" "postinstall" < /dev/tty
+	printf "\nSETDOTS >>> Packages selected for "$OPERATION":\n$TARGET_PKGS\n\n"
+	if [ "$SETDOTS_PROMPT" -ge 1 ]; then prompt_confirmation || exit 1; fi # If SETDOTS_PROMPT is level 1 or level 2
+
+	echo "$TARGET_PKGS" | while read PKG; do
+		PRE_OP="$PKG_REPO/$PKG/pre$OPERATION" 
+		CUSTOM_OP="$PKG_REPO/$PKG/$OPERATION"
+		DEFAULT_OP="$PKG_REPO/default/$OPERATION"
+		POST_OP="$PKG_REPO/$PKG/post$OPERATION"
+
+		if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'setup' ] && [ -f "$PRE_OP" ]; then
+			execute_script "$PKG" "custom" "$PRE_OP" "$OPERATION" < /dev/tty
 		fi
-		if [ -f "$POSTINSTALL" ]; then execute_custom_script "$PKG" "$POSTINSTALL" < /dev/tty; fi
-	done
-}
 
-configure_selected_packages() {
-	# Find packages to be configured among SELECTED_PKGS
-	SETUP_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ni$//p')"
-	if [ -z "$SETUP_PKGS" ]; then return; fi # If found none, return early
-	printf "\nSETDOTS >>> Packages to be configured:\n$SETUP_PKGS\n\n"
-
-	# If SETDOTS_PROMPT is level 1 or level 2
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then prompt_confirmation || exit 1; fi
-
-	echo "$SETUP_PKGS" | while read PKG; do
-		PRESETUP="$PKG_REPO/$PKG/presetup"
-		CUSTOM_SETUP="$PKG_REPO/$PKG/setup"
-		DEFAULT_SETUP="$EXEC_DIR/core/default/setup"
-		POSTSETUP="$PKG_REPO/$PKG/postsetup"
-
-		if [ -f "$PRESETUP" ]; then execute_custom_script "$PKG" "$PRESETUP" "setup" < /dev/tty; fi
-		if [ -f "$CUSTOM_SETUP" ]; then
-			execute_custom_script "$PKG" "$CUSTOM_SETUP" "postsetup" < /dev/tty
+		if [ -f "$CUSTOM_OP" ]; then
+			execute_script "$PKG" "custom" "$CUSTOM_OP" "post$OPERATION" < /dev/tty
 		else
-			execute_default_script "$PKG" "$DEFAULT_SETUP" "postsetup" < /dev/tty
+			execute_script "$PKG" "default" "$DEFAULT_OP" "post$OPERATION" < /dev/tty
 		fi
-		if [ -f "$POSTSETUP" ]; then execute_custom_script "$PKG" "$POSTSETUP" < /dev/tty; fi
-	done
-}
 
-uninstall_selected_packages() {
-	# Find packages to be uninstalled among SELECTED_PKGS
-	UNINSTALL_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ns$//p')"
-	if [ -z "$UNINSTALL_PKGS" ]; then return; fi # If found none, return early
-	printf "\nSETDOTS >>> Packages to be uninstalled:\n$UNINSTALL_PKGS\n\n"
-
-	# If SETDOTS_PROMPT is level 1 or level 2
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then prompt_confirmation || exit 1; fi
-
-	# Update/sync back-end package manager repositories. Set options and environment variables
-	init_pkg_manager
-
-	echo "$UNINSTALL_PKGS" | while read PKG; do
-		CUSTOM_UNINSTALL="$PKG_REPO/$PKG/uninstall"
-		DEFAULT_UNINSTALL="$EXEC_DIR/core/default/uninstall"
-
-		if [ -f "$CUSTOM_UNINSTALL" ]; then
-			execute_custom_script "$PKG" "$CUSTOM_UNINSTALL" < /dev/tty
-		else
-			execute_default_script "$PKG" "$DEFAULT_UNINSTALL" < /dev/tty
+		if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'setup' ] && [ -f "$POST_OP" ]; then
+			execute_script "$PKG" "custom" "$POST_OP" < /dev/tty
 		fi
 	done
-}
 
-remove_configuration_for_selected_packages() {
-	# Find packages for which to remove configuration among SELECTED_PKGS
-	UNSET_PKGS="$(echo "$SELECTED_PKGS" | sed -n 's/:is$//p; s/:ni$//p')"
-	if [ -z "$UNSET_PKGS" ]; then return; fi # If found none, return early
-	printf "\nSETDOTS >>> Removing configuration for following packages:\n$UNSET_PKGS\n\n"
-
-	# If SETDOTS_PROMPT is level 1 or level 2
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then prompt_confirmation || exit 1; fi
-
-	echo "$UNSET_PKGS" | while read PKG; do
-		CUSTOM_UNSET="$PKG_REPO/$PKG/unset"
-		DEFAULT_UNSET="$EXEC_DIR/core/default/unset"
-
-		if [ -f "$CUSTOM_UNSET" ]; then
-			execute_custom_script "$PKG" "$CUSTOM_UNSET" < /dev/tty
-		else
-			execute_default_script "$PKG" "$DEFAULT_UNSET" < /dev/tty
-		fi
-	done
+	unset OPERATION SED_EXPR TARGET_PKGS PRE_OP CUSTOM_OP DEFAULT_OP POST_OP 
 }
 

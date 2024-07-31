@@ -113,18 +113,18 @@ if [ "$l" ]; then
 fi
 
 if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
-	install_selected_packages
+	dispatch_operations 'install'
 fi
 
 if [ "$DEFAULT_OPERATION" ] || [ "$s" ] || [ "$I" ]; then
-	configure_selected_packages
+	dispatch_operations 'setup'
 fi
 
 if [ "$u" ] || [ "$U" ]; then
-	uninstall_selected_packages
+	dispatch_operations 'uninstall'
 fi
 
 if [ "$r" ] || [ "$U" ]; then
-	remove_configuration_for_selected_packages
+	dispatch_operations 'unset'
 fi
 
