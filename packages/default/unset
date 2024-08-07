@@ -17,8 +17,9 @@ recursive_unlink() (
 		rm -f "$DEST/$CONFIG_NAME"
 	fi
 
-	# Delete destination dir if empty after removing config file
-	if [ -z "$(ls -A "$DEST")" ]; then
+	# Delete destination dir if it exists and if empty after removing config file
+	# The destination dir might not exist in the first place. (e.g. the config data was never installed, etc.)
+	if [ -d "$DEST" ] && [ -z "$(ls -A "$DEST")" ]; then
 		echo "Removing empty target config dir at: $DEST"
 		rmdir "$DEST"
 	fi

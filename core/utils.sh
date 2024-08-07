@@ -173,8 +173,13 @@ dispatch_operations() {
 	# Update/sync back-end package manager repositories. Set options and environment variables
 	if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'uninstall' ]; then init_pkg_manager; fi
 
-	# Find packages selected for the operation among SELECTED_PKGS
-	[ "$OPERATION" = 'install' ] && SED_EXPR='s/:is$//p; s/:ns$//p' || SED_EXPR='s/:is$//p; s/:ni$//p'
+	# Find packages suitable for the target operation among SELECTED_PKGS
+	if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'uninstall' ]; then
+		SED_EXPR='s/:is$//p; s/:ns$//p'
+	else # For OPERATION == 'setup' | 'unset'
+		SED_EXPR='s/:is$//p; s/:ni$//p'
+	fi
+
 	TARGET_PKGS="$(echo "$SELECTED_PKGS" | sed -n "$SED_EXPR")"
 	if [ -z "$TARGET_PKGS" ]; then return; fi
 

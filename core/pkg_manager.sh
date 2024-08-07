@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 validate_pkg_manager() {
-	_OS=$(uname -s)
+	_OS="$(uname -s)"
 	MINGW64_MGR="pacman"
 	DARWIN_MGR="brew" # Can be a space-separated list
 	LINUX_MGR="apt pacman brew" # Can be a space-separated list
