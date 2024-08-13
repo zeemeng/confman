@@ -9,7 +9,7 @@ validate_pkg_manager() {
 
 	if [ -z "$PKG_MANAGER" ]; then
 		case "$_OS" in
-			MINGW64*) PKG_MANAGER="$MINGW64_MGR";;
+			MINGW64*|MSYS*) PKG_MANAGER="$MINGW64_MGR";;
 			Darwin)
 				for MGR in $DARWIN_MGR; do
 					if command -v "$MGR" >/dev/null; then PKG_MANAGER="$MGR"; fi

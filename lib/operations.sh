@@ -20,6 +20,13 @@ seek_optional_confirmation() {
 append_to_selected_pkgs() {
 	# Expecting pre-defined variables: PKG_REPO, PKG, SELECTED_PKGS, NEW_LINE
 
+	# Skip the meta package 'default' which holds the default PKG scripts
+	if [ "default" = "$PKG" ]; then return; fi
+
+	# If any line in the "$PKG_REPO/$PKG/platform" file is a case insensitive BRE matching any part
+	# of the output of `uname -s`, continue processing, else return.
+	if ! { [ -f "$PKG_REPO/$PKG/platform" ] && uname -s | grep -i -q -f "$PKG_REPO/$PKG/platform"; }; then return; fi
+
 	# Check if PKG contains any non-whitespace character. If it does, continue, otherwise return
 	echo "$PKG" | grep -q "[^[:space:]]" || return
 
@@ -62,12 +69,13 @@ read_selected_packages() {
 	elif [ "$f" ]; then
 		log_warning "Cannot read package list file. Defaulting to select all packages from repository."
 		seek_optional_confirmation
+		unset f;
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
 	if [ "$#" -eq 0 ] && [ ! "$f" ]; then
 		while read PKG; do
-			if [ "default" != "$PKG" ]; then append_to_selected_pkgs; fi
+			append_to_selected_pkgs
 		done <<-EOF
 		$(ls -1A "$PKG_REPO")
 		EOF

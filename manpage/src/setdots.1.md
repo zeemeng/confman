@@ -1,6 +1,6 @@
-% SETDOTS(1) setdots 0.1
+% SETDOTS(1) setdots 0.2
 %
-% November 2023
+% August 2024
 
 # NAME
 setdots - manage and configure packages
@@ -90,6 +90,9 @@ SETDOTS_DIR
 
 *$PKG_REPO/\<package_name\>/data/*
 :   Optional. Directory which contains package configuration files and data. If setup scripts (see below) for the associated package are not provided, by default when the package is set up / configured, all files within this directory are symlinked to the location specified by the PKG_CONFIG_DEST environment variable. Similarly, if setup scripts for the associated package are not provided, by default when the package configuration is removed / unset by **setdots**, those symlinks are removed.
+
+*$PKG_REPO/\<package_name\>/platform*
+:   Optional. If this file exists, its content shall be a newline-separated list of case insensitive BRE patterns that may match any part of the *uname -s* command's output on platforms/operating systems for which the package is compatible with. Packages which designate such a platform compatibility list will *ONLY* be subject to any operation on its supported platforms.
 
 *$PKG_REPO/\<package_name\>/noinstall*
 :   Optional. If this file exists, installation for this package is ALWAYS skipped.
