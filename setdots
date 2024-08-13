@@ -100,6 +100,8 @@ if [ "$l" ]; then
 	print_exit_selected_packages
 fi
 
+warn_about_skipped_packages
+
 if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
 	dispatch_operations 'install'
 fi
