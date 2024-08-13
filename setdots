@@ -5,8 +5,9 @@ set -e
 
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
 SETDOTS_DIR="$(dirname "$(realpath "$0")")"
-. "$SETDOTS_DIR/core/pkg_manager.sh"
-. "$SETDOTS_DIR/core/utils.sh"
+. "$SETDOTS_DIR/lib/utils.sh"
+. "$SETDOTS_DIR/lib/pkg_manager.sh"
+. "$SETDOTS_DIR/lib/operations.sh"
 
 
 #--- LOCAL UTILITIES ---#
