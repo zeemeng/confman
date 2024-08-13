@@ -6,7 +6,7 @@ recursive_ln() (
 
 	if [ -d "$SRC" ]; then
 		NEW_DEST="$DEST/$(basename "$SRC")"
-		mkdir -pv "$NEW_DEST"
+		mkdir -p "$NEW_DEST"
 
 		ls -1A "$SRC" | while read -r SRC_ITEM
 			do recursive_ln "$SRC/$SRC_ITEM" "$NEW_DEST"; done

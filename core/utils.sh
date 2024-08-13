@@ -1,5 +1,34 @@
 #!/usr/bin/env sh
 
+SETDOTS_RED='\033[1;31m'
+SETDOTS_GREEN='\033[0;32m'
+SETDOTS_YELLOW='\033[0;33m'
+SETDOTS_BLUE='\033[0;36m'
+SETDOTS_NC='\033[0m' # No Color
+SETDOTS_PREFIX_NORMAL='SETDOTS: '
+SETDOTS_PREFIX_WARNING='WARNING: '
+SETDOTS_PREFIX_ERROR='ERROR: '
+
+log_info() {
+	printf "${SETDOTS_BLUE}${SETDOTS_PREFIX_NORMAL}${SETDOTS_NC}$*\n"
+}
+
+log_success() {
+	printf "${SETDOTS_GREEN}${SETDOTS_PREFIX_NORMAL}$*${SETDOTS_NC}\n"
+}
+
+log_warning() {
+	printf "${SETDOTS_YELLOW}${SETDOTS_PREFIX_WARNING}$*${SETDOTS_NC}\n" >&2
+}
+
+log_error() {
+	printf "${SETDOTS_RED}${SETDOTS_PREFIX_ERROR}$*${SETDOTS_NC}\n" >&2
+}
+
+highlight_string() {
+	printf "${SETDOTS_BLUE}$*${SETDOTS_NC}"
+}
+
 print_usage_exit() {
 	cat <<- EOF
 	USAGE:
@@ -13,7 +42,7 @@ print_usage_exit() {
 }
 
 print_version_exit() {
-	echo "setdots v0.1"
+	printf "setdots v0.1\n"
 	exit 0
 }
 
@@ -23,8 +52,22 @@ show_manpage_exit() {
 }
 
 print_exit_invalid_options_combination() {
-	echo "ERROR: Options -i, -I, and -s cannot be used in conjunction with options -u, -U, or -r" >&2
+	log_error "Options -i, -I, and -s cannot be used in conjunction with options -u, -U, or -r"
 	exit 1
+}
+
+seek_optional_confirmation() {
+	# If SETDOTS_PROMPT is level 1 or level 2
+	if [ "$SETDOTS_PROMPT" -ge 1 ]; then
+		printf 'Are you sure you want to continue? (y)es / (n)o: '
+		read RESPONSE
+		case "$RESPONSE" in
+			Y*|y*) printf '\n'; return 0;;
+			*) log_error 'Aborting..'; exit 1;;
+		esac
+
+		unset RESPONSE
+	fi
 }
 
 append_to_selected_pkgs() {
@@ -70,7 +113,8 @@ read_selected_packages() {
 
 	# Specified file exists, but cannot be read
 	elif [ "$f" ]; then
-		printf "ERROR >>> Cannot read package list file. Defaulting to select all packages from repository.\n" >&2
+		log_warning "Cannot read package list file. Defaulting to select all packages from repository."
+		seek_optional_confirmation
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
@@ -84,9 +128,6 @@ read_selected_packages() {
 
 	# Sort and remove duplicate items in SELECTED_PKGS
 	SELECTED_PKGS="$(echo "$SELECTED_PKGS" | sort -u)"
-
-	# DEBUG
-	# echo ">$SELECTED_PKGS<";
 }
 
 print_exit_selected_packages() {
@@ -137,35 +178,25 @@ execute_script() (
 	NEXT_OPERATION="$4" # Desc: Name of the subsequent operation to be performed
 	SCRIPT_NAME="$(basename "$SCRIPT")"
 
-	echo "\nSETDOTS >>> Performing $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\""
+	log_info "Performing $DEFAULT_OR_CUSTOM $(highlight_string "$SCRIPT_NAME") for $(highlight_string "$PKG")"
 
 	if [ ! -x "$SCRIPT" ]; then
-		echo "\nSETDOTS >>> Adding execute permission to $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" file for \"$PKG\""
+		log_warning "Adding execute permission to $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" file for \"$PKG\""
 		if ! chmod ug+x "$SCRIPT" 2>/dev/null; then
-			printf "User '$(whoami)' does not have permission to 'chmod' file '$SCRIPT'. Requesting 'chmod ug+x' on file with 'sudo'..\n" >&2
+			log_warning "User '$(whoami)' does not have permission to 'chmod' file '$SCRIPT'. Requesting 'chmod ug+x' on file with 'sudo'.."
 			sudo chmod ug+x "$SCRIPT"
 		fi
 	fi
 
 	# Invoke the specified script as a command to enable execution by a different interpreter or as a standalone executable
 	if "$SCRIPT"; then
-		echo "SETDOTS >>> SUCCESSFULLY performed "$DEFAULT_OR_CUSTOM" \"$SCRIPT_NAME\" for \"$PKG\""
+		log_success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
 	else
-		echo "ERROR >>> Error during "$DEFAULT_OR_CUSTOM" \"$SCRIPT_NAME\" for \"$PKG\"" >&2
-		if [ "$NEXT_OPERATION" ]; then echo "ERROR >>> Skipping \"$NEXT_OPERATION\" for \"$PKG\"" >&2; fi
+		log_error "An error occured during $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\""
+		if [ "$NEXT_OPERATION" ]; then log_error "Skipping \"$NEXT_OPERATION\" for \"$PKG\""; fi
+		printf '\n'
 	fi
 )
-
-prompt_confirmation() {
-	printf 'Are you sure you want to continue? (y)es / (n)o: '
-	read RESPONSE
-	case "$RESPONSE" in
-		Y*|y*) return 0;;
-		*) printf 'Aborting..\n' >&2; return 1;;
-	esac
-
-	unset RESPONSE
-}
 
 dispatch_operations() {
 	OPERATION="$1" # Values: 'install' | 'setup' | 'uninstall' | 'unset'
@@ -183,8 +214,8 @@ dispatch_operations() {
 	TARGET_PKGS="$(echo "$SELECTED_PKGS" | sed -n "$SED_EXPR")"
 	if [ -z "$TARGET_PKGS" ]; then return; fi
 
-	printf "\nSETDOTS >>> Packages selected for "$OPERATION":\n$TARGET_PKGS\n\n"
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then prompt_confirmation || exit 1; fi # If SETDOTS_PROMPT is level 1 or level 2
+	log_info "Packages selected for $(highlight_string "$OPERATION"):\n$TARGET_PKGS\n"
+	seek_optional_confirmation
 
 	echo "$TARGET_PKGS" | while read PKG; do
 		PRE_OP="$PKG_REPO/$PKG/pre$OPERATION" 
