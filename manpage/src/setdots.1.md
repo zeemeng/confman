@@ -1,15 +1,15 @@
-% SETDOTS(1) setdots 0.2
+% SETDOTS(1) setdots 0.3
 %
-% August 2024
+% September 2024
 
 # NAME
 setdots - manage and configure packages
 
 # SYNOPSIS
-**setdots** [**-iIs**] [**-f** *package_list*] [**-m** *manager*] [**-p** *n*] [*package* *...*]\
-**setdots** [**-uUr**] [**-f** *package_list*] [**-m** *manager*] [**-p** *n*] [*package* *...*]\
-**setdots** [**-l**] [**-f** *package_list*] [*package* *...*]\
-**setdots** [**-vhH**] 
+**setdots** [**-iIs**] [**-m** *pkg_mgr*] [**-d** *config_dest*] [**-g** *config_repo*] [**-p** *prompt_lvl*] [**-f** *pkg_list*] [*package ...*]\
+**setdots** [**-uUr**] [**-m** *pkg_mgr*] [**-d** *config_dest*] [**-g** *config_repo*] [**-p** *prompt_lvl*] [**-f** *pkg_list*] [*package ...*]\
+**setdots** [**-l**] [**-f** *pkg_list*] [*package ...*]\
+**setdots** [**-vhH**]
 
 # DESCRIPTION
 **setdots** can be used to install, uninstall, configure, and remove configuration for a list of selected packages. Selected packages must be defined in a target package repository (see *ENVIRONMENT*). If no selected package is specified, **setdots** selects all packages defined in the repository. If no *Operation* option is provided, **setdots** installs and configures the selected package(s) (same effect as option **-I**). Management operations for each package can be redefined via custom scripts (see *FILES*). Package names must conform to certain requirements as specified in the *NOTES* section.
@@ -48,18 +48,24 @@ setdots - manage and configure packages
 :   Print version information and exit.
 
 ## Configuration
-**-f** *package_list*
-:   Read newline-separated package names from a file and add them to the list of selected packages.
+**-d** *config_dest*
+:   TBD
 
-**-m** *manager*
-:   The back-end package manager to use for installation and uninstallation. Can be an absolute path to an executable or a program name if it can be found in PATH. If both this option and the PKG_MANAGER (see *ENVIRONMENT*) variable are set when this program is invoked, the value of the option argument *manager* overrides that of the variable, and PKG_MANAGER will be reassigned to the value of *manager*. If both are not provided when this program is invoked, **setdots** will automatically attempt to select and use an appropriate package manager command, which is then assigned to PKG_MANAGER.
+**-f** *pkg_list*
+:   Read newline-separated package names from file *pkg_list* and add them to the list of selected packages.
+
+**-g** *config_repo*
+:   TBD
+
+**-m** *pkg_mgr*
+:   The back-end package manager to use for installation and uninstallation. Can be an absolute path to an executable or a program name if it can be found in PATH. If both this option and the PKG_MANAGER (see *ENVIRONMENT*) variable are set when this program is invoked, the value of the option argument *pkg_mgr* overrides that of the variable, and PKG_MANAGER will be reassigned to the value of *pkg_mgr*. If both are not provided when this program is invoked, **setdots** will automatically attempt to select and use an appropriate package manager command, which is then assigned to PKG_MANAGER.
 
     **setdots** sets the *export* variable attribute on PKG_MANAGER, therefore this variable is available in the execution environment of package-specific custom scripts (see *FILES*).
 
-**-p** *n*
-:   Set the amount/level of prompts presented by **setdots**. The argument *n* may be one of three values: *0*, *1*, or *2*. If *0* is specified, no prompt or interactive inquiry is generated for all default operations performed by **setdots**. If *1* is specified, minimal prompting is presented (default behaviour). For example, a prompt is presented to validate the set of packages on which to perform certain actions. If *2* is specified, extensive prompting is enable for default operations. In which case, a confirmation prompt is presented before any operation is performed by the selected back-end package manager for every target package. Any invalid value of *n* is ignored.
+**-p** *prompt_lvl*
+:   Set the amount/level of prompts presented by **setdots**. The argument *prompt_lvl* may be one of three values: *0*, *1*, or *2*. If *0* is specified, no prompt or interactive inquiry is generated for all default operations performed by **setdots**. If *1* is specified, minimal prompting is presented (default behaviour). For example, a prompt is presented to validate the set of packages on which to perform certain actions. If *2* is specified, extensive prompting is enable for default operations. In which case, a confirmation prompt is presented before any operation is performed by the selected back-end package manager for every target package. Any invalid value of *prompt_lvl* is ignored.
 
-    If a valid value of *n* is specified, it is assigned to the variable SETDOTS_PROMPT. If both the **-p** option and the SETDOTS_PROMPT variable is set when this program is invoked, a valid value of *n* overrides the value of the variable. Since **setdots** sets the *export* variable attribute on SETDOTS_PROMPT, this variable is available in the execution environment of package-specific custom scripts (see *FILES*).
+    If a valid value of *prompt_lvl* is specified, it is assigned to the variable SETDOTS_PROMPT. If both the **-p** option and the SETDOTS_PROMPT variable is set when this program is invoked, a valid value of *prompt_lvl* overrides the value of the variable. Since **setdots** sets the *export* variable attribute on SETDOTS_PROMPT, this variable is available in the execution environment of package-specific custom scripts (see *FILES*).
 
 # ENVIRONMENT
 **setdots** sets the *export* attribute on the following shell variables, therefore these are available in the execution environment of package-specific custom scripts (see *FILES*) when such scripts are invoked by **setdots**.
@@ -79,10 +85,10 @@ PKG_REPO
 SETDOTS_PROMPT
 :   The amount/level of prompts presented by **setdots**. It may take one of three values: *0*, *1*, or *2*. If set to *0*, no prompt or interactive inquiry is generated for all default operations performed by **setdots**. If set to *1* (the default value), minimal prompting is presented. For example, a prompt is presented to validate the set of packages on which to perform certain actions. If set to *2*, extensive prompting is enable for default operations. In which case, a confirmation prompt is presented before any operation is performed by the selected back-end package manager for every target package. Any invalid value is replaced with *1*.
 
-    If the option **-p** is specified and has a valid argument *n*, it overrides the value set for this variable. SETDOTS_PROMPT would then be reassigned to the value of *n*.
+    If the option **-p** is specified and has a valid argument *prompt_lvl*, it overrides the value set for this variable. SETDOTS_PROMPT would then be reassigned to the value of *prompt_lvl*.
 
 SETDOTS_DIR
-:   The directory portion of the canonicalized pathname (as returned by the **realpath** utility) for the **setdots** executable. 
+:   The directory portion of the canonicalized pathname (as returned by the **realpath** utility) for the **setdots** executable.
 
 # FILES
 *$PKG_REPO/\<package_name\>/*

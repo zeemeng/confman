@@ -6,51 +6,15 @@ set -e
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
 SETDOTS_DIR="$(dirname "$(realpath "$0")")"
 . "$SETDOTS_DIR/lib/utils.sh"
+. "$SETDOTS_DIR/lib/validations.sh"
 . "$SETDOTS_DIR/lib/pkg_manager.sh"
 . "$SETDOTS_DIR/lib/operations.sh"
 
 
-#--- LOCAL UTILITIES ---#
-
-# Validate that the program is invoked appropriately and that the source directory could be found
-validate_setdots_path() {
-	EXEC_NAME=setdots
-	SETDOTS_PATH="$(realpath "$0")"
-
-	if [ ! -f "$SETDOTS_PATH" ] || [ "$(basename "$SETDOTS_PATH")" != "$EXEC_NAME" ]; then
-		printf 'ERROR: The location of the `setdots` scripts cannot be determined. Are you sourcing the program via the `.` built-in? Please try executing `setdots` as a command or pass it as the parameter to a POSIX shell.\n' >&2
-		sleep 2
-		exit 1
-	fi
-
-	unset EXEC_NAME
-}
-
-select_pkg_repo() {
-	if [ -z "$PKG_REPO" ]; then # PKG_REPO not specified
-		printf "$SETDOTS_DIR/packages"
-	elif ! { [ -d "$PKG_REPO" ] && [ -x "$PKG_REPO" ]; }; then # PKG_REPO specified, but cannot be read
-		printf "SETDOTS >>> Cannot read from the specified package repository. Defaulting to $SETDOTS_DIR/packages\n" >&2
-		printf "$SETDOTS_DIR/packages"
-	else
-		printf "$PKG_REPO"
-	fi
-}
-
-set_prompt_level() {
-	if [ "$SETDOTS_PROMPT" = 0 ] || [ "$SETDOTS_PROMPT" = 1 ] || [ "$SETDOTS_PROMPT" = 2 ]; then
-		printf "$SETDOTS_PROMPT"
-	else
-		printf 1
-	fi
-}
-
-
 #--- PARSE OPTIONS ---#
-
 DEFAULT_OPERATION=1 # Install and set up selected packages if no other option, except -f and -m, is specified
 OPTIND=1 # Reset OPTIND to 1 to clear any value potentially set by previous invocations of "getopts", as a safety measure.
-while getopts "vhHiIsuUrlf:m:p:" OPT; do
+while getopts "vhHiIsuUrlf:m:d:p:g:" OPT; do
 	case "$OPT" in
 	v) v=1; print_version_exit;;
 	h) h=1; print_usage_exit;;
@@ -64,34 +28,30 @@ while getopts "vhHiIsuUrlf:m:p:" OPT; do
 	l) l=1; DEFAULT_OPERATION=;;
 	f) f="$OPTARG";;
 	m) PKG_MANAGER="$OPTARG";;
-	p) [ "$OPTARG" = '0' ] || [ "$OPTARG" = '1' ] || [ "$OPTARG" = '2' ] &&
-		SETDOTS_PROMPT="$OPTARG" ||
-		printf "SETDOTS >>> Invalid argument to option \"-p\" is detected and ignored\n" >&2;;
+	d) PKG_CONFIG_DEST="$OPTARG";;
+	p) SETDOTS_PROMPT="$OPTARG";;
+	g) PKG_REPO="$OPTARG";;
 	?) print_exit_usage;;
 	esac
 done
 shift $((OPTIND - 1))
+validate_option_combinations
 
 
-#--- VALIDATE AND SET VARIABLES ---#
-
+#--- VALIDATE AND EXPORT VARIABLES ---#
 validate_setdots_path
-if [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
-[ -d "$PKG_CONFIG_DEST" ] || PKG_CONFIG_DEST="$HOME"
-export PKG_CONFIG_DEST
+validate_setdots_prompt
+validate_pkg_config_dest
+validate_pkg_repo
+if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
 export PKG_MANAGER
 export SETDOTS_DIR
-export PKG_REPO="$(select_pkg_repo)"
-export SETDOTS_PROMPT="$(set_prompt_level)"
+export SETDOTS_PROMPT
+export PKG_CONFIG_DEST
+export PKG_REPO
 
 
 #--- OPERATE ACCORDING TO OPTIONS ---#
-
-# Test for validity of option combinations
-if { [ "$i" ] || [ "$I" ] || [ "$s" ]; } && { [ "$u" ] || [ "$U" ] || [ "$r" ]; }; then
-	print_exit_invalid_options_combination
-fi
-
 # Read list of selected packages from parameters and repository
 read_selected_packages "$@"
 

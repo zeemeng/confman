@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+# Technically unnecessary, since 'utils.sh' already sourced in main 'setdots' script, but re-sourcing for clarity.
+. "$SETDOTS_DIR/lib/utils.sh"
+
 validate_pkg_manager() {
 	_OS="$(uname -s)"
 	MINGW64_MGR="pacman"
@@ -22,7 +25,7 @@ validate_pkg_manager() {
 	fi
 
 	if ! command -v "$PKG_MANAGER" >/dev/null; then
-		echo "ERROR: No suitable package manager was found." >&2
+		log_error "No suitable package manager was found."
 		exit 1
 	fi
 
@@ -32,9 +35,9 @@ validate_pkg_manager() {
 # Update/sync back-end package manager repositories with external sources. Set options and environment variables
 init_pkg_manager() {
 	[ "$PKG_MANAGER" = "apt" ] && sudo apt update && return
-	
+
 	[ "$PKG_MANAGER" = "pacman" ] && sudo pacman -Sy && return
-	
+
 	if [ "$PKG_MANAGER" = "brew" ]; then
 		# Do not run `brew update --auto-update` before certain operations such as install
 		export HOMEBREW_NO_AUTO_UPDATE=1

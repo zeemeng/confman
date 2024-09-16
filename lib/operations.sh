@@ -3,18 +3,33 @@
 # Technically unnecessary, since 'utils.sh' already sourced in main 'setdots' script, but re-sourcing for clarity.
 . "$SETDOTS_DIR/lib/utils.sh"
 
-seek_optional_confirmation() {
-	# If SETDOTS_PROMPT is level 1 or level 2
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then
-		printf 'Are you sure you want to continue? (y)es / (n)o: '
-		read RESPONSE
-		case "$RESPONSE" in
-			Y*|y*) printf '\n'; return 0;;
-			*) log_error 'Aborting..'; exit 1;;
-		esac
+print_usage_exit() {
+	cat <<- EOF
+	USAGE:
+	setdots [-iIs] [-m pkg_mgr] [-d config_dest] [-g config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
+	setdots [-uUr] [-m pkg_mgr] [-d config_dest] [-g config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
+	setdots [-l] [-f pkg_list] [package ...]
+	setdots [-vhH]
 
-		unset RESPONSE
-	fi
+	EOF
+	exit 1
+}
+
+print_version_exit() {
+	printf "setdots v0.1\n"
+	exit 0
+}
+
+show_manpage_exit() {
+	man "$SETDOTS_DIR/manpage/roff/setdots.1"
+	exit 0
+}
+
+warn_about_skipped_packages() {
+	if [ -z "$SKIP_PKGS" ]; then return; fi
+
+	log_warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
+	printf "$SKIP_PKGS\n\n"
 }
 
 # Depends on pre-defined variables: PKG_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS, NEW_LINE
@@ -69,18 +84,18 @@ read_selected_packages() {
 
 	# If specified file exists and can be read, select packages from file line-by-line
 	if [ -f "$f" ] && [ -r "$f" ]; then
-		while read PKG; do append_to_pkg_lists; done < "$f"
+		while read -r PKG; do append_to_pkg_lists; done < "$f"
 
 	# Specified file exists, but cannot be read
 	elif [ "$f" ]; then
 		log_warning "Cannot read package list file. Defaulting to select all packages from repository."
-		seek_optional_confirmation
+		prompt_continuation_or_exit
 		unset f;
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
 	if [ "$#" -eq 0 ] && [ ! "$f" ]; then
-		while read PKG; do
+		while read -r PKG; do
 			append_to_pkg_lists
 		done <<-EOF
 		$(ls -1A "$PKG_REPO")
@@ -99,9 +114,7 @@ print_exit_selected_packages() {
 	printf "%-20s%-20s%-20s%-20s%-20s%-20s\n" "Package Name" "Platform" "Install" "Uninstall" "Setup" "Unset"
 	printf "=============================================================================================================\n"
 
-	# DEBUG
-	# printf "===$REQUESTED_PKGS===\n"
-	echo "$REQUESTED_PKGS" | while read PKG; do
+	printf '%s\n' "$REQUESTED_PKGS" | while read -r PKG; do
 		# "Package Name" column
 		printf "%-20s" "$PKG"
 
@@ -139,13 +152,6 @@ print_exit_selected_packages() {
 		printf "\n"
 	done
 	exit 0
-}
-
-warn_about_skipped_packages() {
-	if [ -z "$SKIP_PKGS" ]; then return; fi
-
-	log_warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
-	printf "$SKIP_PKGS\n\n"
 }
 
 execute_script() (
@@ -186,11 +192,16 @@ dispatch_operations() {
 		TARGET_PKGS="$SETUP_PKGS"
 	fi
 
-	log_info "Packages selected for $(highlight_string "$OPERATION"):\n$TARGET_PKGS\n"
-	seek_optional_confirmation
+	if [ -z "$TARGET_PKGS" ]; then
+		log_warning "No package available for $OPERATION.. Done."
+		return 0
+	fi
 
-	echo "$TARGET_PKGS" | while read PKG; do
-		PRE_OP="$PKG_REPO/$PKG/pre$OPERATION" 
+	log_info "Packages selected for $(highlight_string "$OPERATION"):\n$TARGET_PKGS\n"
+	prompt_continuation_or_exit
+
+	printf '%s\n' "$TARGET_PKGS" | while read -r PKG; do
+		PRE_OP="$PKG_REPO/$PKG/pre$OPERATION"
 		CUSTOM_OP="$PKG_REPO/$PKG/$OPERATION"
 		DEFAULT_OP="$PKG_REPO/default/$OPERATION"
 		POST_OP="$PKG_REPO/$PKG/post$OPERATION"
@@ -210,6 +221,6 @@ dispatch_operations() {
 		fi
 	done
 
-	unset OPERATION SED_EXPR TARGET_PKGS PRE_OP CUSTOM_OP DEFAULT_OP POST_OP 
+	unset OPERATION SED_EXPR TARGET_PKGS PRE_OP CUSTOM_OP DEFAULT_OP POST_OP
 }
 
