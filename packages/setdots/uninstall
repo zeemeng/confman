@@ -1,19 +1,21 @@
 #!/usr/bin/env sh
 
 EXEC_DIR='/usr/local/bin'
-MAN_DIR='/usr/local/share/man/man1/'
+MAN_DIR='/usr/local/share/man/man1'
 
 printf "Requesting 'sudo' permission to perform the following actions:
 sudo rm -f $EXEC_DIR/setdots
+
 "
 sudo rm -f "$EXEC_DIR/setdots"
 
-printf "SETDOTS >>> Removed symlink for 'setdots' executable: $EXEC_DIR/setdots\n"
+printf "SETDOTS >>> Removed symlink for 'setdots' executable: $EXEC_DIR/setdots\n\n"
 
 printf "Requesting 'sudo' permission to perform the following actions:
 sudo rm -f $MAN_DIR/setdots.1
+
 "
 sudo rm -f "$MAN_DIR/setdots.1"
 
-printf "SETDOTS >>> Removed symlink for 'setdots' man page: $MAN_DIR/setdots.1\n"
+printf "SETDOTS >>> Removed symlink for 'setdots' man page: $MAN_DIR/setdots.1\n\n"
 
