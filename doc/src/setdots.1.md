@@ -1,7 +1,3 @@
-% SETDOTS(1) setdots 0.4
-%
-% September 2024
-
 # NAME
 setdots - manage and configure packages
 

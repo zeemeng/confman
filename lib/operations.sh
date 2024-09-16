@@ -23,7 +23,7 @@ print_usage_exit() {
 }
 
 print_version_exit() {
-	printf "setdots v0.1\n"
+	printf "setdots $(cat "$SETDOTS_DIR/version")\n"
 	exit 0
 }
 
