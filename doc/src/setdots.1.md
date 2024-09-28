@@ -129,5 +129,5 @@ SETDOTS_DIR
 # NOTES
 A valid package name shall not consist strictly of whitespace characters as defined by the **space** character class of the shell environment locale. A valid package name shall also not contain any occurance of the \<newline\> character which is reserved for use as a delimiter by **setdots**.
 
-To be recognizable / selectable by **setdots**, each *package* specified as command operand, or specified within a *pkg_list* file as required by the **-f** option, must have an associated sub-directory of the same name witin the targeted package repository (see variable SETDOTS_REPO).
+To be recognizable / selectable by **setdots**, each *package* specified as command operand, or specified within a *pkg_list* file as required by the **-f** option, must have an associated sub-directory of the same name within the targeted package repository (see variable SETDOTS_REPO).
 

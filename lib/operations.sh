@@ -97,7 +97,7 @@ read_selected_packages() {
 	# If no operand and no package-list file is specified, select all packages from the target package repository
 	if [ "$#" -eq 0 ] && [ ! "$PKG_FILE" ]; then
 		while read -r PKG; do
-			append_to_pkg_lists
+			if [ -d "$SETDOTS_REPO/$PKG" ]; then append_to_pkg_lists; fi
 		done <<-EOF
 		$(ls -1A "$SETDOTS_REPO")
 		EOF
