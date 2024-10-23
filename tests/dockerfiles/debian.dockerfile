@@ -7,5 +7,8 @@ EOF
 USER tester
 COPY . /setdots
 WORKDIR /setdots
+RUN <<-EOF
+  ./setdots -p0
+EOF
 CMD [ "bash" ]
 

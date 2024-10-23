@@ -207,6 +207,9 @@ dispatch_operations() {
 	log_info "Packages selected for $(highlight_string "$OPERATION"):\n$TARGET_PKGS\n"
 	prompt_continuation_or_exit
 
+	INPUT_DEVICE='/dev/tty'
+	if [ "$SETDOTS_PROMPT" -eq 0 ]; then INPUT_DEVICE='/dev/null'; fi
+
 	printf '%s\n' "$TARGET_PKGS" | while read -r PKG; do
 		PRE_OP="$SETDOTS_REPO/$PKG/pre$OPERATION"
 		CUSTOM_OP="$SETDOTS_REPO/$PKG/$OPERATION"
@@ -214,13 +217,13 @@ dispatch_operations() {
 		POST_OP="$SETDOTS_REPO/$PKG/post$OPERATION"
 
 		if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'setup' ] && [ -f "$PRE_OP" ]; then
-			execute_script "$PKG" "custom" "$PRE_OP" "$OPERATION" < /dev/tty
+			execute_script "$PKG" "custom" "$PRE_OP" "$OPERATION" < "$INPUT_DEVICE"
 		fi
 
 		if [ -f "$CUSTOM_OP" ]; then
-			execute_script "$PKG" "custom" "$CUSTOM_OP" "post$OPERATION" < /dev/tty
+			execute_script "$PKG" "custom" "$CUSTOM_OP" "post$OPERATION" < "$INPUT_DEVICE"
 		else
-			execute_script "$PKG" "default" "$DEFAULT_OP" "post$OPERATION" < /dev/tty
+			execute_script "$PKG" "default" "$DEFAULT_OP" "post$OPERATION" < "$INPUT_DEVICE"
 		fi
 
 		if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'setup' ] && [ -f "$POST_OP" ]; then
