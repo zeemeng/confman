@@ -28,14 +28,14 @@ print_version_exit() {
 }
 
 show_manpage_exit() {
-	man "$CONFMAN_DIR/manpage/roff/confman.1"
+	man "$CONFMAN_DIR/doc/man/confman.1"
 	exit 0
 }
 
 warn_about_skipped_packages() {
 	if [ -z "$SKIP_PKGS" ]; then return; fi
 
-	log_warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
+	"$CONFMAN_LOG" warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
 	printf "$SKIP_PKGS\n\n"
 }
 
@@ -89,7 +89,7 @@ read_selected_packages() {
 
 	# Specified file exists, but cannot be read
 	elif [ "$PKG_FILE" ]; then
-		log_warning "Cannot read package list file. Defaulting to select all packages from repository."
+		"$CONFMAN_LOG" warning "Cannot read package list file. Defaulting to select all packages from repository."
 		prompt_continuation_or_exit
 		unset f;
 	fi
@@ -168,22 +168,22 @@ execute_script() (
 	NEXT_OPERATION="$4" # Desc: Name of the subsequent operation to be performed
 	SCRIPT_NAME="$(basename "$SCRIPT")"
 
-	log_info "Performing $DEFAULT_OR_CUSTOM $(highlight_string "$SCRIPT_NAME") for $(highlight_string "$PKG")"
+	"$CONFMAN_LOG" info "Performing $DEFAULT_OR_CUSTOM $("$CONFMAN_LOG" highlight "$SCRIPT_NAME") for $("$CONFMAN_LOG" highlight "$PKG")"
 
 	if [ ! -x "$SCRIPT" ]; then
-		log_warning "Adding execute permission to $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" file for \"$PKG\""
+		"$CONFMAN_LOG" warning "Adding execute permission to $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" file for \"$PKG\""
 		if ! chmod ug+x "$SCRIPT" 2>/dev/null; then
-			log_warning "User '$(whoami)' does not have permission to 'chmod' file '$SCRIPT'. Requesting 'chmod ug+x' on file with 'sudo'.."
+			"$CONFMAN_LOG" warning "User '$(whoami)' does not have permission to 'chmod' file '$SCRIPT'. Requesting 'chmod ug+x' on file with 'sudo'.."
 			sudo chmod ug+x "$SCRIPT"
 		fi
 	fi
 
 	# Invoke the specified script as a command to enable execution by a different interpreter or as a standalone executable
 	if "$SCRIPT"; then
-		log_success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
+		"$CONFMAN_LOG" success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
 	else
-		log_error "An error occured during $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\""
-		if [ "$NEXT_OPERATION" ]; then log_error "Skipping \"$NEXT_OPERATION\" for \"$PKG\""; fi
+		"$CONFMAN_LOG" error "An error occured during $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\""
+		if [ "$NEXT_OPERATION" ]; then "$CONFMAN_LOG" error "Skipping \"$NEXT_OPERATION\" for \"$PKG\""; fi
 		printf '\n'
 	fi
 )
@@ -200,11 +200,11 @@ dispatch_operations() {
 	fi
 
 	if [ -z "$TARGET_PKGS" ]; then
-		log_warning "No package available for $OPERATION.. Done."
+		"$CONFMAN_LOG" warning "No package available for $OPERATION.. Done."
 		return 0
 	fi
 
-	log_info "Packages selected for $(highlight_string "$OPERATION"):\n$TARGET_PKGS\n"
+	"$CONFMAN_LOG" info "Packages selected for $("$CONFMAN_LOG" highlight "$OPERATION"):\n$TARGET_PKGS\n"
 	prompt_continuation_or_exit
 
 	INPUT_DEVICE='/dev/tty'

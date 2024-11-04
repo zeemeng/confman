@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 
-EXEC_FILE="$CONFMAN_DIR/confman"
+EXEC_FILE="$CONFMAN_DIR/bin/confman"
 EXEC_DIR='/usr/local/bin'
 MAN_FILE="$CONFMAN_DIR/doc/man/confman.1"
 MAN_DIR='/usr/local/share/man/man1'
 
-printf "Requesting 'sudo' permission to perform the following actions:
+"$CONFMAN_LOG" warning "Requesting 'sudo' permission to perform the following actions:
 sudo mkdir -p $EXEC_DIR
 sudo ln -sf $EXEC_FILE $EXEC_DIR
 
@@ -13,9 +13,9 @@ sudo ln -sf $EXEC_FILE $EXEC_DIR
 sudo mkdir -p "$EXEC_DIR"
 sudo ln -sf "$EXEC_FILE" "$EXEC_DIR"
 
-printf "CONFMAN >>> Created symlink for 'confman' executable: $EXEC_DIR/confman --> $EXEC_FILE\n\n"
+"$CONFMAN_LOG" info "Created symlink for $("$CONFMAN_LOG" highlight 'confman') executable: $EXEC_DIR/confman --> $EXEC_FILE\n\n"
 
-printf "Requesting 'sudo' permission to perform the following actions:
+"$CONFMAN_LOG" warning "Requesting 'sudo' permission to perform the following actions:
 sudo mkdir -p $MAN_DIR
 sudo ln -sf $MAN_FILE $MAN_DIR
 
@@ -23,5 +23,5 @@ sudo ln -sf $MAN_FILE $MAN_DIR
 sudo mkdir -p "$MAN_DIR"
 sudo ln -sf "$MAN_FILE" "$MAN_DIR"
 
-printf "CONFMAN >>> Created symlink for 'confman' man page: $MAN_DIR/confman.1 --> $MAN_FILE\n\n"
+"$CONFMAN_LOG" info "Created symlink for $("$CONFMAN_LOG" highlight 'confman') man page: $MAN_DIR/confman.1 --> $MAN_FILE\n\n"
 

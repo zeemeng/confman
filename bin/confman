@@ -4,11 +4,12 @@ set -e
 
 
 #--- DECLARE AND EXPORT GLOBAL VARIABLES ---#
-export CONFMAN_DIR="$(dirname "$(realpath "$0")")"
+export CONFMAN_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 export CONFMAN_PROMPT="${CONFMAN_PROMPT-1}" # Set default value **if** unassigned
 export CONFMAN_REPO="${CONFMAN_REPO-$CONFMAN_DIR/packages}" # Set default value **if** unassigned
 export CONFMAN_DEST="${CONFMAN_DEST-$HOME}" # Set default value **if** unassigned
 export CONFMAN_MGR="${CONFMAN_MGR-}"
+export CONFMAN_LOG="$CONFMAN_DIR/bin/confman_log"
 export PKG=''
 PKG_FILE=''
 DEFAULT_OPERATION=1
@@ -25,22 +26,22 @@ DEFAULT_OPERATION=1
 OPTIND=1 # Reset OPTIND to 1 to clear any value potentially set by previous invocations of "getopts", as a safety measure.
 while getopts "vhHiIsuUrlf:m:d:p:g:" OPT; do
 	case "$OPT" in
-	v) print_version_exit;;
-	h) print_usage_exit;;
-	H) show_manpage_exit;;
-	i) i=1; DEFAULT_OPERATION=;;
-	I) I=1; DEFAULT_OPERATION=;;
-	s) s=1; DEFAULT_OPERATION=;;
-	u) u=1; DEFAULT_OPERATION=;;
-	U) U=1; DEFAULT_OPERATION=;;
-	r) r=1; DEFAULT_OPERATION=;;
-	l) l=1; DEFAULT_OPERATION=;;
-	f) PKG_FILE="$OPTARG";;
-	m) CONFMAN_MGR="$OPTARG";;
-	d) CONFMAN_DEST="$OPTARG";;
-	p) CONFMAN_PROMPT="$OPTARG";;
-	g) CONFMAN_REPO="$OPTARG";;
-	?) print_exit_usage;;
+		v) print_version_exit;;
+		h) print_usage_exit;;
+		H) show_manpage_exit;;
+		i) i=1; DEFAULT_OPERATION=;;
+		I) I=1; DEFAULT_OPERATION=;;
+		s) s=1; DEFAULT_OPERATION=;;
+		u) u=1; DEFAULT_OPERATION=;;
+		U) U=1; DEFAULT_OPERATION=;;
+		r) r=1; DEFAULT_OPERATION=;;
+		l) l=1; DEFAULT_OPERATION=;;
+		f) PKG_FILE="$OPTARG";;
+		m) CONFMAN_MGR="$OPTARG";;
+		d) CONFMAN_DEST="$OPTARG";;
+		p) CONFMAN_PROMPT="$OPTARG";;
+		g) CONFMAN_REPO="$OPTARG";;
+		?) print_exit_usage;;
 	esac
 done
 shift $((OPTIND - 1))

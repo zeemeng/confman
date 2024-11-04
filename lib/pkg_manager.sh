@@ -26,7 +26,7 @@ validate_pkg_manager() {
 	fi
 
 	if ! command -v "$CONFMAN_MGR" >/dev/null; then
-		log_error "No suitable package manager was found."
+		"$CONFMAN_LOG" error "No suitable package manager was found."
 		exit 1
 	fi
 

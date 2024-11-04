@@ -45,7 +45,7 @@ confman - manage and configure packages
 
 ## Configuration
 **-d** *config_dest*
-:   Specify the destination where symlinks of package data and configuration files are created at by the default package configuration operation. The value of *config_dest* overrides that of the CONFMAN_DIR variable (see *ENVIRONMENT*), and would be assigned to it if valid. If neither *config_dest* nor CONFMAN_DEST are specified, the value of the HOME environment variable is used by default.
+:   Specify the destination where symlinks of package data and configuration files are created at by the default package configuration operation. The value of *config_dest* overrides that of the CONFMAN_DEST variable (see *ENVIRONMENT*), and would be assigned to it if valid. If neither *config_dest* nor CONFMAN_DEST are specified, the value of the HOME environment variable is used by default.
 
 **-f** *pkg_list*
 :   Read newline-separated package names from file *pkg_list* and add them to the list of selected packages.
@@ -85,6 +85,9 @@ CONFMAN_PROMPT
 
 CONFMAN_DIR
 :   The directory portion of the canonicalized pathname (as returned by the **realpath** utility) for the **confman** executable.
+
+CONFMAN_LOG
+:   Path to an executable utility for logging **confman**-related, formatted log messages. It can be invoked in user scripts, and takes 2 or more arguments. The first argument determines the formatting and standard stream destination of the log message. It shall have one of the following values: *info*, *success*, *warning*, *error*, *highlight*. The remaining arguments are used as the content of the formatted log message.
 
 # FILES
 *$CONFMAN_REPO/\<package_name\>/*
