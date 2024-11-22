@@ -1,56 +1,56 @@
 #!/usr/bin/env sh
-
 set -e
 
+export CONFMAN_BIN_PATH CONFMAN_LIB_PATH CONFMAN_MAN_PATH CONFMAN_VERSION CONFMAN_PROMPT CONFMAN_REPO CONFMAN_DEST CONFMAN_MGR PKG
 
-#--- DECLARE AND EXPORT GLOBAL VARIABLES ---#
-export CONFMAN_RED='\033[1;31m'
-export CONFMAN_GREEN='\033[0;32m'
-export CONFMAN_YELLOW='\033[0;33m'
-export CONFMAN_BLUE='\033[0;36m'
-export CONFMAN_NC='\033[0m' # No Color
-export CONFMAN_PREFIX_NORMAL='CONFMAN: '
-export CONFMAN_PREFIX_WARNING='WARNING: '
-export CONFMAN_PREFIX_ERROR='ERROR: '
 
-export CONFMAN_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
-export CONFMAN_PROMPT="${CONFMAN_PROMPT-1}" # Set default value **if** unassigned
-export CONFMAN_REPO="${CONFMAN_REPO-$CONFMAN_DIR/packages}" # Set default value **if** unassigned
-export CONFMAN_DEST="${CONFMAN_DEST-$HOME}" # Set default value **if** unassigned
-export CONFMAN_MGR="${CONFMAN_MGR-}"
-export CONFMAN_LOG="$CONFMAN_DIR/bin/confman_log"
-export CONFMAN_TASK="$CONFMAN_DIR/bin/confman_task"
-export PKG=''
-PKG_FILE=''
-DEFAULT_OPERATION=1
+#--- GLOBAL VARIABLES SUBJECT TO CHANGE FROM MAKEFILE ---#
+CONFMAN_ROOT="$(dirname "$(dirname "$(realpath "$0")")")"
+CONFMAN_BIN_PATH="$CONFMAN_ROOT/bin"
+CONFMAN_LIB_PATH="$CONFMAN_ROOT/lib"
+CONFMAN_MAN_PATH="$CONFMAN_ROOT/doc/man"
+CONFMAN_VERSION="$(cat "$CONFMAN_ROOT/version")"
 
 
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
-. "$CONFMAN_DIR/lib/utils.sh"
-. "$CONFMAN_DIR/lib/validations.sh"
-. "$CONFMAN_DIR/lib/operations.sh"
+. "$CONFMAN_LIB_PATH/colors.sh"
+. "$CONFMAN_LIB_PATH/utils.sh"
+. "$CONFMAN_LIB_PATH/validations.sh"
+. "$CONFMAN_LIB_PATH/operations.sh"
+
+
+#--- OTHER GLOBAL VARIABLES ---#
+CONFMAN_DATA_PATH="$(find_data_path)"
+CONFMAN_PROMPT="${CONFMAN_PROMPT-1}" # Set default value **if** unassigned
+CONFMAN_REPO="${CONFMAN_REPO-$CONFMAN_DATA_PATH/packages}" # Set default value **if** unassigned
+CONFMAN_DEST="${CONFMAN_DEST-$HOME}" # Set default value **if** unassigned
+CONFMAN_MGR="${CONFMAN_MGR-}"
 
 
 #--- PARSE OPTIONS ---#
 OPTIND=1 # Reset OPTIND to 1 to clear any value potentially set by previous invocations of "getopts", as a safety measure.
-while getopts "vhHiIsuUrlf:m:d:p:g:" OPT; do
+unset CUSTOM_OPERATION BOOTSTRAP_FLAG LOG_LEVEL D_OPTARG PKG_FILE
+while getopts "vhHiIcuUxlbL:D:f:m:d:p:r:" OPT; do
 	case "$OPT" in
 		v) print_version_exit;;
 		h) print_usage_exit;;
 		H) show_manpage_exit;;
-		i) i=1; DEFAULT_OPERATION=;;
-		I) I=1; DEFAULT_OPERATION=;;
-		s) s=1; DEFAULT_OPERATION=;;
-		u) u=1; DEFAULT_OPERATION=;;
-		U) U=1; DEFAULT_OPERATION=;;
-		r) r=1; DEFAULT_OPERATION=;;
-		l) l=1; DEFAULT_OPERATION=;;
+		i) i=1; CUSTOM_OPERATION=1;;
+		I) I=1; CUSTOM_OPERATION=1;;
+		c) c=1; CUSTOM_OPERATION=1;;
+		u) u=1; CUSTOM_OPERATION=1;;
+		U) U=1; CUSTOM_OPERATION=1;;
+		x) x=1; CUSTOM_OPERATION=1;;
+		l) l=1; CUSTOM_OPERATION=1;;
+		b) BOOTSTRAP_FLAG=1;;
+		L) LOG_LEVEL=$OPTARG; CUSTOM_OPERATION=1;;
+		D) D_OPTARG=$OPTARG;;
 		f) PKG_FILE="$OPTARG";;
 		m) CONFMAN_MGR="$OPTARG";;
 		d) CONFMAN_DEST="$OPTARG";;
 		p) CONFMAN_PROMPT="$OPTARG";;
-		g) CONFMAN_REPO="$OPTARG";;
-		?) print_exit_usage;;
+		r) CONFMAN_REPO="$OPTARG";;
+		?) print_usage_exit;;
 	esac
 done
 shift $((OPTIND - 1))
@@ -58,29 +58,38 @@ shift $((OPTIND - 1))
 
 #--- VALIDATE AND EXPORT VARIABLES ---#
 validate_option_combinations
-validate_confman_path
 validate_confman_prompt
 validate_confman_dest
 validate_confman_repo
-if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
+if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
 
 
 #--- OPERATE ACCORDING TO OPTIONS ---#
+if [ "$LOG_LEVEL" ]; then confman_log "$LOG_LEVEL" "$@"; exit 0; fi
+
+if [ "$D_OPTARG" ]; then dispatch_d_task "$@"; exit 0; fi
+
 # Read list of selected packages from parameters and repository
 read_selected_packages "$@"
 
-# Operate according to option(s) specified
-if [ "$l" ]; then
-	print_exit_selected_packages
-fi
+if [ "$l" ]; then print_selected_packages; exit 0; fi
 
 warn_about_skipped_packages
 
-if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
+if [ "$BOOTSTRAP_FLAG" ]; then
+	case "$PATH" in
+		*"$CONFMAN_BIN_PATH"*) ;;
+		'') PATH="$CONFMAN_BIN_PATH";;
+		':') PATH="$CONFMAN_BIN_PATH:";;
+		*) PATH="$CONFMAN_BIN_PATH:$PATH";;
+	esac
+fi
+
+if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
 	dispatch_operations 'install'
 fi
 
-if [ "$DEFAULT_OPERATION" ] || [ "$s" ] || [ "$I" ]; then
+if [ -z "$CUSTOM_OPERATION" ] || [ "$c" ] || [ "$I" ]; then
 	dispatch_operations 'configure'
 fi
 
@@ -88,7 +97,7 @@ if [ "$u" ] || [ "$U" ]; then
 	dispatch_operations 'uninstall'
 fi
 
-if [ "$r" ] || [ "$U" ]; then
+if [ "$x" ] || [ "$U" ]; then
 	dispatch_operations 'unconfigure'
 fi
 

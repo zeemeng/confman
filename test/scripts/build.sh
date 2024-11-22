@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
-# !!! NON-POSIX feature available in BSD, GNU/Linux and MacOS: options -f for command "readlink"
-SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_PATH="$(realpath "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 IMAGE="$1"
 

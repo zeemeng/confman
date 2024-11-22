@@ -1,35 +1,40 @@
 #!/usr/bin/env sh
 
-recursive_unlink() (
-	SRC="$(readlink -f "$1")"
-	DEST="$2"
-	CONFIG_NAME="$(basename "$SRC")"
+delink() (
+	safe_unlink () {
+		if [ ! -e "$2" ]; then return 0; fi
+		if [ -d "$1" ] || [ ! -L "$2" ] || [ "$1" != "$(realpath "$2")" ]; then
+			printf '[delink] error: link source does not match link target\n\tsource: %s\n\ttarget: %s\n\t%s\n' "$1" "$2" >&2
+			exit 1
+		fi
+		printf 'Removing symlink: '
+		rm -fv "$2"
+	}
 
-	if [ -d "$SRC" ]; then
-		NEW_DEST="$DEST/$CONFIG_NAME"
+	set -- "$(realpath "$1")" "$2" # use absolute path as link source
 
-		ls -1A "$SRC" | while read -r SRC_ITEM; do
-			recursive_unlink "$SRC/$SRC_ITEM" "$NEW_DEST"
-		done
-	else
-		# Remove config file at destination dir
-		echo "Removing config data at: $DEST/$CONFIG_NAME"
-		rm -f "$DEST/$CONFIG_NAME"
-	fi
+	# [Case 1] $1:source --> file (symlink origin), $2:target --> file (symlink)
+	if [ ! -d "$2" ]; then safe_unlink "$1" "$2"; return; fi
 
-	# Delete destination dir if it exists and if empty after removing config file
-	# The destination dir might not exist in the first place. (e.g. the config data was never installed, etc.)
-	if [ -d "$DEST" ] && [ -z "$(ls -A "$DEST")" ]; then
-		echo "Removing empty target config dir at: $DEST"
-		rmdir "$DEST"
+	# [Case 2] $1:source --> file (symlink origin), $2:target --> dir (parent of symlink)
+	if [ ! -d "$1" ]; then safe_unlink "$1" "$2/$(basename "$1")"; return; fi
+
+	# [Case 3] $1:source --> dir (parent of symlink origin), $2:target --> dir (parent of symlink)
+	if [ ! -r "$1" ]; then printf "[delink] error: cannot read link source directory: $1\n" >&2; exit 1; fi
+	for ITEM in $(ls -1AL "$1"); do
+		if [ ! -d "$1/$ITEM" ]; then
+			safe_unlink "$1/$ITEM" "$2/$ITEM"
+		else
+			delink "$1/$ITEM" "$2/$ITEM"
+		fi
+	done
+	if [ -z "$(ls -1AL "$2")" ]; then
+		printf "Removing empty directory: "
+		rm -fdv "$2"
 	fi
 )
 
-DATA_DIR="$CONFMAN_REPO/$PKG/data"
-
-if [ -d "$DATA_DIR" ]; then
-	ls -1A "$DATA_DIR" | while read CONFIG; do
-		recursive_unlink "$DATA_DIR/$CONFIG" "$CONFMAN_DEST"
-	done
-fi
+SRC_DIR="${SRC_DIR-$CONFMAN_REPO/$PKG/data}"
+LINK_TARGET="${LINK_TARGET-$CONFMAN_DEST}"
+if [ -d "$SRC_DIR" ]; then delink "$SRC_DIR" "$LINK_TARGET"; fi
 

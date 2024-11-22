@@ -1,22 +1,15 @@
 #!/usr/bin/env sh
 
-REQUESTED_PKGS=
-INSTALL_PKGS=
-SETUP_PKGS=
-SKIP_PKGS=
-PKG_DIR=
-NEW_LINE='
-'
-
-# Technically unnecessary, since 'utils.sh' already sourced in main 'confman' script, but re-sourcing for clarity.
-. "$CONFMAN_DIR/lib/utils.sh"
+unset -v REQUESTED_PKGS INSTALL_PKGS SETUP_PKGS SKIP_PKGS PKG_DIR
 
 print_usage_exit() {
 	cat <<- EOF
 	USAGE:
-	confman [-iIs] [-m pkg_mgr] [-d config_dest] [-g config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
-	confman [-uUr] [-m pkg_mgr] [-d config_dest] [-g config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
+	confman [-iIcb] [-m pkg_mgr] [-d config_dest] [-r config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
+	confman [-uUxb] [-m pkg_mgr] [-d config_dest] [-r config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
 	confman [-l] [-f pkg_list] [package ...]
+	confman -D default_op [-m pkg_mgr] [-d config_dest] [-r config_repo] [-p prompt_lvl] [package]
+	confman -L log_lvl log_msg
 	confman [-vhH]
 
 	EOF
@@ -24,23 +17,30 @@ print_usage_exit() {
 }
 
 print_version_exit() {
-	printf "confman $(cat "$CONFMAN_DIR/version")\n"
+	printf "confman $CONFMAN_VERSION\n"
 	exit 0
 }
 
 show_manpage_exit() {
-	man "$CONFMAN_DIR/doc/man/confman.1"
+	man "$CONFMAN_MAN_PATH/confman.1"
 	exit 0
+}
+
+find_data_path () {
+	if [ -d "$CONFMAN_ROOT/packages" ]; then printf "$CONFMAN_ROOT"; return 0; fi
+	if [ -d "$HOME/.confman" ]; then printf "$HOME/.confman"; return 0; fi
+	if [ "$XDG_CONFIG_HOME" ] && [ -d "$XDG_CONFIG_HOME/confman" ]; then printf "$XDG_CONFIG_HOME/confman"; return 0; fi
+	if [ -d "$HOME/.config/confman" ]; then printf "$HOME/.config/confman"; return 0; fi
 }
 
 warn_about_skipped_packages() {
 	if [ -z "$SKIP_PKGS" ]; then return; fi
 
-	"$CONFMAN_LOG" warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
+	confman_log warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
 	printf "$SKIP_PKGS\n\n"
 }
 
-# Depends on pre-defined variables: CONFMAN_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS, NEW_LINE
+# Depends on pre-defined variables: CONFMAN_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS
 append_to_pkg_lists() {
 	PKG_DIR="$CONFMAN_REPO/$PKG"
 
@@ -51,33 +51,33 @@ append_to_pkg_lists() {
 	if [ "default" = "$PKG" ]; then return; fi
 
 	# Append to the list of requested pkgs
-	REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}${NEW_LINE}"
+	REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}"$'\n'
 
 	# If any line in the "$PKG_DIR/platform" file is a case insensitive BRE matching any part
 	# of the output of `uname -s`, continue processing, else return.
 	if [ -f "$PKG_DIR/platform" ] && ! is_platform_compatible "$PKG_DIR/platform"; then
-		SKIP_PKGS="${SKIP_PKGS}${PKG}${NEW_LINE}"
+		SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'
 		return
 	fi
 
 	if [ -f "$PKG_DIR/noinstall" ] && [ -f "$PKG_DIR/noconfigure" ]; then
-		SKIP_PKGS="${SKIP_PKGS}${PKG}${NEW_LINE}"
+		SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'
 		return
 	fi
 
 	if [ -f "$PKG_DIR/noinstall" ]; then
-		SETUP_PKGS="${SETUP_PKGS}${PKG}${NEW_LINE}"
+		SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'
 		return
 	fi
 
 	if [ -f "$PKG_DIR/noconfigure" ]; then
-		INSTALL_PKGS="${INSTALL_PKGS}${PKG}${NEW_LINE}"
+		INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'
 		return
 	fi
 
 	if [ -d "$PKG_DIR" ]; then
-		SETUP_PKGS="${SETUP_PKGS}${PKG}${NEW_LINE}"
-		INSTALL_PKGS="${INSTALL_PKGS}${PKG}${NEW_LINE}"
+		SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'
+		INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'
 		return
 	fi
 }
@@ -92,7 +92,7 @@ read_selected_packages() {
 
 	# Specified file exists, but cannot be read
 	elif [ "$PKG_FILE" ]; then
-		"$CONFMAN_LOG" warning "Cannot read package list file. Defaulting to select all packages from repository."
+		confman_log warning "Cannot read package list file. Defaulting to select all packages from repository."
 		prompt_continuation_or_exit
 		unset f;
 	fi
@@ -102,7 +102,7 @@ read_selected_packages() {
 		while read -r PKG; do
 			if [ -d "$CONFMAN_REPO/$PKG" ]; then append_to_pkg_lists; fi
 		done <<-EOF
-		$(ls -1A "$CONFMAN_REPO")
+		$(ls -1AL "$CONFMAN_REPO")
 		EOF
 	fi
 
@@ -113,13 +113,8 @@ read_selected_packages() {
 	SKIP_PKGS="$(printf "$SKIP_PKGS" | sort -u)"
 }
 
-print_exit_selected_packages() {
-	PKG_COLUMN=
-	PLATFORM_COLUMN=
-	INSTALL_COLUMN=
-	UNINSTALL_COLUMN=
-	CONFIG_COLUMN=
-	UNCONFIG_COLUMN=
+print_selected_packages() {
+	unset -v PKG_COLUMN PLATFORM_COLUMN INSTALL_COLUMN UNINSTALL_COLUMN CONFIG_COLUMN UNCONFIG_COLUMN
 
 	# Print header
 	printf "%-31s%-31s%-31s%-31s%-31s%-31s\n" "`print_blue Package Name`" "`print_blue Platform`" "`print_blue Install`" "`print_blue Uninstall`" "`print_blue Configure`" "`print_blue Unconfigure`"
@@ -129,7 +124,7 @@ print_exit_selected_packages() {
 		PKG_DIR="$CONFMAN_REPO/$PKG"
 
 		# "Package Name" column
-		PKG_COLUMN=`$CONFMAN_LOG hl_blue "$PKG"`
+		PKG_COLUMN="$(confman_log hl_blue "$PKG")"
 
 		# "Platform" column
 		if [ -f "$PKG_DIR/platform" ]; then
@@ -185,68 +180,69 @@ print_exit_selected_packages() {
 		printf '%-31s%-31s%-31s%-31s%-31s%-31s\n' "$PKG_COLUMN" "$PLATFORM_COLUMN" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN" "$CONFIG_COLUMN" "$UNCONFIG_COLUMN"
 	done
 	printf '\n'
+}
+
+dispatch_d_task () {
+	case "$#" in
+		0) ;;
+		1) PKG="$1";;
+		*) confman_log error 'too many operands'; print_usage_exit;;
+	esac
+	case "$D_OPTARG" in
+		update|install|uninstall|configure|unconfigure) execute_task "$D_OPTARG";;
+		*) confman_log error "unrecognized argument value passed to option '-D': $1"; print_usage_exit;;
+	esac
 	exit 0
 }
 
-execute_script() (
-	DEFAULT_OR_CUSTOM=
-	SCRIPT=
-	SCRIPT_ARGS=
-	SCRIPT_NAME=
-	NEXT_OPERATION=
-
-	case "$1" in
-		pre*|post*|custom_*) DEFAULT_OR_CUSTOM='custom';;
-		*) DEFAULT_OR_CUSTOM='default';;
-	esac
+execute_task() (
+	unset -v DEFAULT_OR_CUSTOM SCRIPT SCRIPT_NAME
 
 	case "$1" in
 		custom_*) SCRIPT_NAME="${1#custom_}";;
-		default_*) SCRIPT_NAME="${1#default_}";;
 		*) SCRIPT_NAME="$1";;
 	esac
 
 	case "$1" in
-		default_*) SCRIPT="$CONFMAN_TASK" && SCRIPT_ARGS="$SCRIPT_NAME";;
-		*) SCRIPT="$PKG_DIR/$SCRIPT_NAME";;
+		pre*|post*|custom_*)
+			DEFAULT_OR_CUSTOM='custom'
+			SCRIPT="$CONFMAN_REPO/$PKG/$SCRIPT_NAME";;
+		configure|unconfigure)
+			DEFAULT_OR_CUSTOM='default'
+			SCRIPT="$CONFMAN_LIB_PATH/$SCRIPT_NAME";;
+		*)
+			DEFAULT_OR_CUSTOM='default'
+			SCRIPT="$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$SCRIPT_NAME";;
 	esac
 
-	case "$SCRIPT_NAME" in
-		pre*) NEXT_OPERATION="${SCRIPT_NAME#pre}";;
-		install|configure) NEXT_OPERATION="post${SCRIPT_NAME}";;
-		*) NEXT_OPERATION=;;
-	esac
+	if [ "$SCRIPT_NAME" = "update" ]; then
+		fix_permission_execute "$SCRIPT"
+		return;
+	fi
 
-	"$CONFMAN_LOG" info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$SCRIPT_NAME") for $(print_blue "$PKG")"
+	if [ ! "$D_OPTARG" ]; then
+		confman_log info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$SCRIPT_NAME") for $(print_blue "$PKG")"
+	fi
 
-	verify_execute_permission "$SCRIPT"
-
-	# Invoke the specified script as a command to enable execution by a different interpreter or as a standalone executable
-	if "$SCRIPT" $SCRIPT_ARGS; then
-		"$CONFMAN_LOG" success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
+	if fix_permission_execute "$SCRIPT"; then
+		confman_log success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
 	else
-		"$CONFMAN_LOG" error "An error occured during $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\""
-		if [ "$NEXT_OPERATION" ]; then "$CONFMAN_LOG" error "Skipping \"$NEXT_OPERATION\" for \"$PKG\""; fi
-		printf '\n'
+		confman_log error "An error occured during $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
 	fi
 )
 
 dispatch_operations() {
-	TARGET_PKGS=
+	unset -v TARGET_PKGS INPUT_DEVICE PKG_DIR
 
 	# Update/sync back-end package manager repositories. Set options and environment variables
 	case "$1" in
-		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && "$CONFMAN_TASK" update;;
-		configure | deconfigure) TARGET_PKGS="$SETUP_PKGS";;
-		*) "$CONFMAN_LOG" error "unrecognized argument value passed to function 'dispatch_operations': $1" && return 1;;
+		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && execute_task update;;
+		configure | unconfigure) TARGET_PKGS="$SETUP_PKGS";;
+		*) confman_log error "unrecognized argument value passed to function 'dispatch_operations': $1" && return 1;;
 	esac
 
-	if [ -z "$TARGET_PKGS" ]; then
-		"$CONFMAN_LOG" warning "No package available for $1.. Done."
-		return 0
-	fi
-
-	"$CONFMAN_LOG" info "Packages selected for $(print_blue "$1"):\n$TARGET_PKGS\n"
+	if [ -z "$TARGET_PKGS" ]; then confman_log warning "No package available for $1.. Done."; return 0; fi
+	confman_log info "Packages selected for $(print_blue "$1"):\n$TARGET_PKGS\n"
 	prompt_continuation_or_exit
 
 	case "$CONFMAN_PROMPT" in
@@ -258,19 +254,19 @@ dispatch_operations() {
 		PKG_DIR="$CONFMAN_REPO/$PKG"
 		case "$1" in
 			install | configure)
-				if [ -f "$PKG_DIR/pre$1" ]; then execute_script "pre$1"; fi
+				if [ -f "$PKG_DIR/pre$1" ]; then execute_task "pre$1"; fi
 				if [ -f "$PKG_DIR/$1" ]; then
-					execute_script "custom_$1"
+					execute_task "custom_$1"
 				else
-					execute_script "default_$1"
+					execute_task "$1"
 				fi
-				if [ -f "$PKG_DIR/post$1" ]; then execute_script "post$1"; fi
+				if [ -f "$PKG_DIR/post$1" ]; then execute_task "post$1"; fi
 			;;
-			uninstall | deconfigure)
+			uninstall | unconfigure)
 				if [ -f "$PKG_DIR/$1" ]; then
-					execute_script "custom_$1"
+					execute_task "custom_$1"
 				else
-					execute_script "default_$1"
+					execute_task "$1"
 				fi
 			;;
 		esac < "$INPUT_DEVICE"

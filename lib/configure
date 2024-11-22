@@ -1,33 +1,23 @@
 #!/usr/bin/env sh
 
-recursive_ln() (
-	SRC="$(readlink -f "$1")"
-	DEST="$2"
+# !! NON-POSIX feature available in BSD, GNU/Linux and MacOS: options -s and -v of "cp"
+# Not used, since MacOS 14.1 has a bug where the "-s" option does not work as expected.
+rlink() (
+	set -- "$(realpath "$1")" "$2" # use absolute path as link source
 
-	if [ -d "$SRC" ]; then
-		NEW_DEST="$DEST/$(basename "$SRC")"
-		mkdir -p "$NEW_DEST"
+	if [ ! -d "$1" ]; then printf "Creating symlink: "; ln -sfv "$1" "$2"; return 0; fi
 
-		ls -1A "$SRC" | while read -r SRC_ITEM
-			do recursive_ln "$SRC/$SRC_ITEM" "$NEW_DEST"; done
-	else
-		ln -sf "$SRC" "$DEST"
-	fi
+	if [ ! -r "$1" ]; then printf "[rlink] error: cannot read link source directory: $1\n" >&2; exit 1; fi
+
+	mkdir -p "$2"
+
+	for ITEM in $(ls -1AL "$1"); do
+		if [ ! -d "$1/$ITEM" ]; then printf "Creating symlink: "; ln -sfv "$1/$ITEM" "$2"; continue; fi
+		rlink "$1/$ITEM" "$2/$ITEM"
+	done
 )
 
-DATA_DIR="$CONFMAN_REPO/$PKG/data"
-
-if [ -d "$DATA_DIR" ] && [ -r "$DATA_DIR" ]; then
-	mkdir -p "$CONFMAN_DEST"
-
-	while read CONFIG; do
-		# !! NON-POSIX feature available in BSD, GNU/Linux and MacOS: options -s and -v for command "cp"
-		# Disabled, since MacOS 14.1 has a bug with the "cp" utility where the "-s" option does not work as expected
-		#cp -Rsv "$DATA_DIR/$CONFIG" "$HOME"
-
-		recursive_ln "$DATA_DIR/$CONFIG" "$CONFMAN_DEST"
-	done <<-EOF
-	$(ls -1A "$DATA_DIR")
-	EOF
-fi
+SRC_DIR="${SRC_DIR-$CONFMAN_REPO/$PKG/data}"
+LINK_TARGET="${LINK_TARGET-$CONFMAN_DEST}"
+if [ -d "$SRC_DIR" ]; then rlink "$SRC_DIR" "$LINK_TARGET"; fi
 
