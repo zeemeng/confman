@@ -25,11 +25,12 @@ $(MAN): $(MAN_SRC) $(VERSION_FILE)
 
 
 $(BUILD): $(BUILD_SRC)
+	mkdir -p $(@D)
 	for ITEM in $^; do sed \
-	-e 's:^CONFMAN_BIN_PATH=.*$$:CONFMAN_BIN_PATH=$(INSTALL_BIN_PATH):'
+	-e 's:^CONFMAN_BIN_PATH=.*$$:CONFMAN_BIN_PATH=$(INSTALL_BIN_PATH):' \
 	-e 's:^CONFMAN_LIB_PATH=.*$$:CONFMAN_LIB=$(INSTALL_LIB_PATH):' \
 	-e 's:^CONFMAN_MAN_PATH=.*$$:CONFMAN_MANPATH=$(INSTALL_MAN_PATH):' \
-	-e "s:^CONFMAN_VERSION=.*$$:CONFMAN_VERSION=$$(cat "$(VERSION_FILE)"):") \
+	-e "s:^CONFMAN_VERSION=.*$$:CONFMAN_VERSION=$$(cat "$(VERSION_FILE)"):" \
 	"$$ITEM" > "build/$$(basename "$$ITEM")"; done
 
 
