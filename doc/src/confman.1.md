@@ -72,6 +72,12 @@ PKG
 CONFMAN_DEST
 :   The destination where symlinks of package data and configuration files are created at by the default package configuration operation. By default, it is set to the value of the HOME environment variable. Its value is overriden by that of option **-d**'s argument if the latter is specified.
 
+CONFMAN_DIR
+:   The directory portion of the canonicalized pathname (as returned by the **realpath** utility) for the **confman** executable.
+
+CONFMAN_LOG
+:   Path to an executable utility for logging **confman**-related, formatted log messages. It can be invoked in user scripts, and takes 2 or more arguments. The first argument determines the formatting and standard stream destination of the log message. It shall have one of the following values: *info*, *success*, *warning*, *error*, *highlight*. The remaining arguments are used as the content of the formatted log message.
+
 CONFMAN_MGR
 :   The back-end package manager to use for installation and uninstallation. Can be an absolute path to an executable or a program name if it can be found in PATH. Its value is overriden by that of option **-m**'s argument if the latter is specified. If both this variable and the **-m** option are not provided when this program is invoked, **confman** will automatically attempt to select and use an appropriate package manager command, which is then assigned to CONFMAN_MGR.
 
@@ -83,18 +89,15 @@ CONFMAN_PROMPT
 
     If the option **-p** is specified and has a valid argument *prompt_lvl*, it overrides the value set for this variable. CONFMAN_PROMPT would then be reassigned to the value of *prompt_lvl*.
 
-CONFMAN_DIR
-:   The directory portion of the canonicalized pathname (as returned by the **realpath** utility) for the **confman** executable.
-
-CONFMAN_LOG
-:   Path to an executable utility for logging **confman**-related, formatted log messages. It can be invoked in user scripts, and takes 2 or more arguments. The first argument determines the formatting and standard stream destination of the log message. It shall have one of the following values: *info*, *success*, *warning*, *error*, *highlight*. The remaining arguments are used as the content of the formatted log message.
+CONFMAN_TASK
+:   Path to an executable utility for dispatching the default *install*, *uninstall*, *configure*, *unconfigure* operations. It can be invoked in user scripts, and takes at least 1 argument. The first argument is mandatory and its value shall correspond to the operation to be dispatched. Environment variables provided on invocation of this utility will be propagated to downstream executables that itself would invoke.
 
 # FILES
 *$CONFMAN_REPO/\<package_name\>/*
 :   Each directory immediately below the package repository (path given by the environment variable CONFMAN_REPO) shall be associated with a package and may contain installation and configuration scripts, as well as configuration data for that package. The name of such a directory MUST match the name of a package that could be provided to **confman** as a selected package. Furthermore, during the default installation and uninstallation operations, this name is provided as the target to the selected package manager (see option **-m**). If this name cannot be reliably used as the target for all supported package managers, then custom installation scripts (see below) should be created.
 
 *$CONFMAN_REPO/\<package_name\>/data/*
-:   Optional. Directory which contains package configuration files and data. If setup scripts (see below) for the associated package are not provided, by default when the package is set up / configured, all files within this directory are symlinked to the location specified by the CONFMAN_DEST environment variable. Similarly, if setup scripts for the associated package are not provided, by default when the package configuration is removed / unset by **confman**, those symlinks are removed.
+:   Optional. Directory which contains package configuration files and data. If setup scripts (see below) for the associated package are not provided, by default when the package is set up / configured, all files within this directory are symlinked to the location specified by the CONFMAN_DEST environment variable. Similarly, if setup scripts for the associated package are not provided, by default when the package configuration is removed by **confman**, those symlinks are removed.
 
 *$CONFMAN_REPO/\<package_name\>/platform*
 :   Optional. If this file exists, its content shall be a newline-separated list of case insensitive BRE patterns that may match any part of the *uname -s* command's output on platforms/operating systems for which the package is compatible with. Packages which designate such a platform compatibility list will *ONLY* be subject to any operation on its supported platforms.
@@ -114,19 +117,19 @@ CONFMAN_LOG
 *$CONFMAN_REPO/\<package_name\>/uninstall*
 :   Optional. Uninstallation script that replaces the default package uninstallation operation. The default package uninstallation operation simply involves uninstalling a selected package using the selected package manager.
 
-*$CONFMAN_REPO/\<package_name\>/nosetup*
+*$CONFMAN_REPO/\<package_name\>/noconfigure*
 :   Optional. If this file exists, setup / configuration for this package is ALWAYS skipped.
 
-*$CONFMAN_REPO/\<package_name\>/presetup*
+*$CONFMAN_REPO/\<package_name\>/preconfigure*
 :   Optional. Pre-configuration script that is executed before its associated packages undergoes default setup / configuration, or before the *$CONFMAN_REPO/\<package_name\>/setup* script if it exists.
 
-*$CONFMAN_REPO/\<package_name\>/setup*
+*$CONFMAN_REPO/\<package_name\>/configure*
 :   Optional. Configuration script that replaces the default package setup / configuration operation (see *$CONFMAN_REPO/\<package_name\>/data/* above).
 
-*$CONFMAN_REPO/\<package_name\>/postsetup*
+*$CONFMAN_REPO/\<package_name\>/postconfigure*
 :   Optional. Post-configuration script that is executed after its associated packages undergoes default setup / configuration, or after the *$CONFMAN_REPO/\<package_name\>/setup* script if it exists.
 
-*$CONFMAN_REPO/\<package_name\>/unset*
+*$CONFMAN_REPO/\<package_name\>/unconfigure*
 :   Optional. Configuration removal script that replaces the default package configuration removal operation (see *$CONFMAN_REPO/\<package_name\>/data/* above).
 
 # NOTES

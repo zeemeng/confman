@@ -1,25 +1,19 @@
-#!/usr/bin/env sh
-
-CONFMAN_RED='\033[1;31m'
-CONFMAN_GREEN='\033[0;32m'
-CONFMAN_YELLOW='\033[0;33m'
-CONFMAN_BLUE='\033[0;36m'
-CONFMAN_NC='\033[0m' # No Color
-CONFMAN_PREFIX_NORMAL='CONFMAN: '
-CONFMAN_PREFIX_WARNING='WARNING: '
-CONFMAN_PREFIX_ERROR='ERROR: '
+#!/usr/bin/env sh -e
 
 if [ $# -lt 2 ]; then
 	printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}%s${CONFMAN_NC}\n" "confman_log has been invoked with $# parameters, but requires at least 2." >&2
 	exit 1
 fi
 
-case $1 in
+case "$1" in
 	info) shift && printf "${CONFMAN_BLUE}${CONFMAN_PREFIX_NORMAL}${CONFMAN_NC}$@\n";;
 	success) shift && printf "${CONFMAN_GREEN}${CONFMAN_PREFIX_NORMAL}$@${CONFMAN_NC}\n";;
 	warning) shift && printf "${CONFMAN_YELLOW}${CONFMAN_PREFIX_WARNING}$@${CONFMAN_NC}\n" >&2;;
 	error) shift && printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}$@${CONFMAN_NC}\n" >&2;;
-	highlight) shift && printf "${CONFMAN_BLUE}$@${CONFMAN_NC}";;
+	hl_red) shift && printf "${CONFMAN_RED}$@${CONFMAN_NC}";;
+	hl_green) shift && printf "${CONFMAN_GREEN}$@${CONFMAN_NC}";;
+	hl_yellow) shift && printf "${CONFMAN_YELLOW}$@${CONFMAN_NC}";;
+	hl_blue) shift && printf "${CONFMAN_BLUE}$@${CONFMAN_NC}";;
 	*) printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}%s${CONFMAN_NC}\n" "the first argument to confman_log has an unsupported value: $1" >&2 && exit 1
 esac
 

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+if [ "$CONFMAN_PROMPT" -le 1 ]; then PROMPT_OPT='--yes'; fi
+sudo apt purge --autoremove $PROMPT_OPT $EXTRA_OPTS "$PKG" $EXTRA_ARGS
+

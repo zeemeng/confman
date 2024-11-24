@@ -4,12 +4,22 @@ set -e
 
 
 #--- DECLARE AND EXPORT GLOBAL VARIABLES ---#
+export CONFMAN_RED='\033[1;31m'
+export CONFMAN_GREEN='\033[0;32m'
+export CONFMAN_YELLOW='\033[0;33m'
+export CONFMAN_BLUE='\033[0;36m'
+export CONFMAN_NC='\033[0m' # No Color
+export CONFMAN_PREFIX_NORMAL='CONFMAN: '
+export CONFMAN_PREFIX_WARNING='WARNING: '
+export CONFMAN_PREFIX_ERROR='ERROR: '
+
 export CONFMAN_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 export CONFMAN_PROMPT="${CONFMAN_PROMPT-1}" # Set default value **if** unassigned
 export CONFMAN_REPO="${CONFMAN_REPO-$CONFMAN_DIR/packages}" # Set default value **if** unassigned
 export CONFMAN_DEST="${CONFMAN_DEST-$HOME}" # Set default value **if** unassigned
 export CONFMAN_MGR="${CONFMAN_MGR-}"
 export CONFMAN_LOG="$CONFMAN_DIR/bin/confman_log"
+export CONFMAN_TASK="$CONFMAN_DIR/bin/confman_task"
 export PKG=''
 PKG_FILE=''
 DEFAULT_OPERATION=1
@@ -18,7 +28,6 @@ DEFAULT_OPERATION=1
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
 . "$CONFMAN_DIR/lib/utils.sh"
 . "$CONFMAN_DIR/lib/validations.sh"
-. "$CONFMAN_DIR/lib/pkg_manager.sh"
 . "$CONFMAN_DIR/lib/operations.sh"
 
 
@@ -72,7 +81,7 @@ if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
 fi
 
 if [ "$DEFAULT_OPERATION" ] || [ "$s" ] || [ "$I" ]; then
-	dispatch_operations 'setup'
+	dispatch_operations 'configure'
 fi
 
 if [ "$u" ] || [ "$U" ]; then
@@ -80,6 +89,6 @@ if [ "$u" ] || [ "$U" ]; then
 fi
 
 if [ "$r" ] || [ "$U" ]; then
-	dispatch_operations 'unset'
+	dispatch_operations 'unconfigure'
 fi
 

@@ -1,0 +1,16 @@
+#!/usr/bin/env sh -e
+
+. "$CONFMAN_DIR/lib/utils.sh"
+
+case "$1" in
+	update) EXECUTABLE="$CONFMAN_DIR/mgr/$CONFMAN_MGR/update";;
+	upgrade) EXECUTABLE="$CONFMAN_DIR/mgr/$CONFMAN_MGR/upgrade";;
+	install) EXECUTABLE="$CONFMAN_DIR/mgr/$CONFMAN_MGR/install";;
+	uninstall) EXECUTABLE="$CONFMAN_DIR/mgr/$CONFMAN_MGR/uninstall";;
+	configure) EXECUTABLE="$CONFMAN_DIR/lib/configure";;
+	unconfigure) EXECUTABLE="$CONFMAN_DIR/lib/unconfigure";;
+	*) "$CONFMAN_LOG" error "unrecognized argument value passed to utility 'confman_task': $1" && return 1;;
+esac
+
+verify_execute_permission "$EXECUTABLE" && "$EXECUTABLE"
+

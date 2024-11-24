@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+# Do not run `brew update --auto-update` before certain operations such as install
+export HOMEBREW_NO_AUTO_UPDATE=1
+
+# Update/sync homebrew repositories
+brew update
+

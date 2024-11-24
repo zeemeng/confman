@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# brew does not prompt for confirmation before installing packages and does not seem to have options to force prompting
+if [ "$HOMEBREW_CASK" ]; then CASK_OPTS='--cask --require-sha'; fi
+brew install $CASK_OPTS $EXTRA_OPTS "$PKG" $EXTRA_ARGS
+
