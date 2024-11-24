@@ -1,4 +1,5 @@
-#!/usr/bin/env sh -e
+#!/usr/bin/env sh
+set -e
 
 # By default apk is non-interactive. See FILES or --interactive on changing this default to be interactive.
 if [ "$CONFMAN_PROMPT" -gt 1 ]; then PROMPT_OPT='--interactive'; fi

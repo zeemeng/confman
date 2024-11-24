@@ -1,4 +1,5 @@
-#!/usr/bin/env sh -e
+#!/usr/bin/env sh
+set -e
 
 . "$CONFMAN_DIR/lib/utils.sh"
 
