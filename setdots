@@ -45,27 +45,15 @@ set_prompt_level() {
 }
 
 
-#--- VALIDATE AND SET VARIABLES ---#
-
-validate_setdots_path
-validate_pkg_manager
-[ -d "$PKG_CONFIG_DEST" ] || PKG_CONFIG_DEST="$HOME"
-export PKG_CONFIG_DEST
-export PKG_MANAGER
-export SETDOTS_DIR
-export PKG_REPO="$(select_pkg_repo)"
-export SETDOTS_PROMPT="$(set_prompt_level)"
-
-
 #--- PARSE OPTIONS ---#
 
 DEFAULT_OPERATION=1 # Install and set up selected packages if no other option, except -f and -m, is specified
 OPTIND=1 # Reset OPTIND to 1 to clear any value potentially set by previous invocations of "getopts", as a safety measure.
 while getopts "vhHiIsuUrlf:m:p:" OPT; do
 	case "$OPT" in
-	v) v=1; DEFAULT_OPERATION=;;
-	h) h=1; DEFAULT_OPERATION=;;
-	H) H=1; DEFAULT_OPERATION=;;
+	v) v=1; print_version_exit;;
+	h) h=1; print_usage_exit;;
+	H) H=1; show_manpage_exit;;
 	i) i=1; DEFAULT_OPERATION=;;
 	I) I=1; DEFAULT_OPERATION=;;
 	s) s=1; DEFAULT_OPERATION=;;
@@ -84,20 +72,19 @@ done
 shift $((OPTIND - 1))
 
 
+#--- VALIDATE AND SET VARIABLES ---#
+
+validate_setdots_path
+if [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
+[ -d "$PKG_CONFIG_DEST" ] || PKG_CONFIG_DEST="$HOME"
+export PKG_CONFIG_DEST
+export PKG_MANAGER
+export SETDOTS_DIR
+export PKG_REPO="$(select_pkg_repo)"
+export SETDOTS_PROMPT="$(set_prompt_level)"
+
+
 #--- OPERATE ACCORDING TO OPTIONS ---#
-
-# Take action and return early if any of the -v -h or -H options is specified
-if [ "$v" ]; then
-	print_exit_version
-fi
-
-if [ "$h" ]; then
-	print_exit_usage
-fi
-
-if [ "$H" ]; then
-	show_manpage_exit
-fi
 
 # Test for validity of option combinations
 if { [ "$i" ] || [ "$I" ] || [ "$s" ]; } && { [ "$u" ] || [ "$U" ] || [ "$r" ]; }; then

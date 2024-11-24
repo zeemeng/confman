@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-print_exit_usage() {
+print_usage_exit() {
 	cat <<- EOF
 	USAGE:
 	setdots [-iIs] [-f package_list] [-m manager] [-p n] [package ...]
@@ -12,7 +12,7 @@ print_exit_usage() {
 	exit 1
 }
 
-print_exit_version() {
+print_version_exit() {
 	echo "setdots v0.1"
 	exit 0
 }
