@@ -1,11 +1,18 @@
 #!/usr/bin/env sh
 
-[ "$SETDOTS_PROMPT" -le 1 ] && NO_PROMPT='--yes'
-[ "$SETDOTS_MGR" = "apt" ] && sudo apt purge $NO_PROMPT --autoremove "$PKG" && exit 0
+if [ "$SETDOTS_MGR" = 'apt' ]; then
+	if [ "$SETDOTS_PROMPT" -le 1 ]; then PROMPT_OPT='--yes'; fi
+	sudo apt purge --autoremove $PROMPT_OPT $EXTRA_OPTS "$PKG" $EXTRA_ARGS
+fi
 
-[ "$SETDOTS_PROMPT" -le 1 ] && NO_PROMPT='--noconfirm'
-[ "$SETDOTS_MGR" = "pacman" ] && sudo pacman -Rns $NO_PROMPT "$PKG" && exit 0
+if [ "$SETDOTS_MGR" = 'pacman' ]; then
+	if [ "$SETDOTS_PROMPT" -le 1 ]; then PROMPT_OPT='--noconfirm'; fi
+	sudo pacman -Rns $PROMPT_OPT $EXTRA_OPTS "$PKG" $EXTRA_ARGS
+fi
 
 # brew does not prompt for confirmation before installing packages and does not seem to have options to force prompting
-[ "$SETDOTS_MGR" = "brew" ] && HOMEBREW_AUTOREMOVE=1 brew uninstall "$PKG" && exit 0
+if [ "$SETDOTS_MGR" = 'brew' ]; then
+	if [ "$HOMEBREW_CASK" ]; then CASK_OPTS='--cask --force --zap'; fi
+	HOMEBREW_AUTOREMOVE=1 brew uninstall $CASK_OPTS $EXTRA_OPTS "$PKG" $EXTRA_ARGS
+fi
 
