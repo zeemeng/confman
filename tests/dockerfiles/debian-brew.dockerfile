@@ -13,8 +13,8 @@ RUN <<-EOF
 	echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
 EOF
 COPY . /setdots
-ENV PKG_REPO=/setdots/tests/pkg_repo
-ENV PKG_MANAGER=brew
+ENV SETDOTS_REPO=/setdots/tests/pkg_repo
+ENV SETDOTS_MGR=brew
 WORKDIR /setdots
 CMD [ "bash" ]
 

@@ -1,5 +1,12 @@
 #!/usr/bin/env sh
 
+REQUESTED_PKGS=""
+INSTALL_PKGS=""
+SETUP_PKGS=""
+SKIP_PKGS=""
+NEW_LINE="
+"
+
 # Technically unnecessary, since 'utils.sh' already sourced in main 'setdots' script, but re-sourcing for clarity.
 . "$SETDOTS_DIR/lib/utils.sh"
 
@@ -32,7 +39,7 @@ warn_about_skipped_packages() {
 	printf "$SKIP_PKGS\n\n"
 }
 
-# Depends on pre-defined variables: PKG_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS, NEW_LINE
+# Depends on pre-defined variables: SETDOTS_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS, NEW_LINE
 append_to_pkg_lists() {
 	# Check if PKG contains any non-whitespace character. If it does, continue, otherwise return
 	if ! echo "$PKG" | grep -q "[^[:space:]]"; then return; fi
@@ -43,29 +50,29 @@ append_to_pkg_lists() {
 	# Append to the list of requested pkgs
 	REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}${NEW_LINE}"
 
-	# If any line in the "$PKG_REPO/$PKG/platform" file is a case insensitive BRE matching any part
+	# If any line in the "$SETDOTS_REPO/$PKG/platform" file is a case insensitive BRE matching any part
 	# of the output of `uname -s`, continue processing, else return.
-	if [ -f "$PKG_REPO/$PKG/platform" ] && ! { uname -s | grep -i -q -f "$PKG_REPO/$PKG/platform"; }; then
+	if [ -f "$SETDOTS_REPO/$PKG/platform" ] && ! { uname -s | grep -i -q -f "$SETDOTS_REPO/$PKG/platform"; }; then
 		SKIP_PKGS="${SKIP_PKGS}${PKG}${NEW_LINE}"
 		return
 	fi
 
-	if [ -f "$PKG_REPO/$PKG/noinstall" ] && [ -f "$PKG_REPO/$PKG/nosetup" ]; then
+	if [ -f "$SETDOTS_REPO/$PKG/noinstall" ] && [ -f "$SETDOTS_REPO/$PKG/nosetup" ]; then
 		SKIP_PKGS="${SKIP_PKGS}${PKG}${NEW_LINE}"
 		return
 	fi
 
-	if [ -f "$PKG_REPO/$PKG/noinstall" ]; then
+	if [ -f "$SETDOTS_REPO/$PKG/noinstall" ]; then
 		SETUP_PKGS="${SETUP_PKGS}${PKG}${NEW_LINE}"
 		return
 	fi
 
-	if [ -f "$PKG_REPO/$PKG/nosetup" ]; then
+	if [ -f "$SETDOTS_REPO/$PKG/nosetup" ]; then
 		INSTALL_PKGS="${INSTALL_PKGS}${PKG}${NEW_LINE}"
 		return
 	fi
 
-	if [ -d "$PKG_REPO/$PKG" ]; then
+	if [ -d "$SETDOTS_REPO/$PKG" ]; then
 		SETUP_PKGS="${SETUP_PKGS}${PKG}${NEW_LINE}"
 		INSTALL_PKGS="${INSTALL_PKGS}${PKG}${NEW_LINE}"
 		return
@@ -73,32 +80,26 @@ append_to_pkg_lists() {
 }
 
 read_selected_packages() {
-	REQUESTED_PKGS=""
-	INSTALL_PKGS=""
-	SETUP_PKGS=""
-	SKIP_PKGS=""
-	NEW_LINE="
-"
 	# Select packages from operands
 	for PKG in "$@"; do append_to_pkg_lists; done
 
 	# If specified file exists and can be read, select packages from file line-by-line
-	if [ -f "$f" ] && [ -r "$f" ]; then
-		while read -r PKG; do append_to_pkg_lists; done < "$f"
+	if [ -f "$PKG_FILE" ] && [ -r "$PKG_FILE" ]; then
+		while read -r PKG; do append_to_pkg_lists; done < "$PKG_FILE"
 
 	# Specified file exists, but cannot be read
-	elif [ "$f" ]; then
+	elif [ "$PKG_FILE" ]; then
 		log_warning "Cannot read package list file. Defaulting to select all packages from repository."
 		prompt_continuation_or_exit
 		unset f;
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
-	if [ "$#" -eq 0 ] && [ ! "$f" ]; then
+	if [ "$#" -eq 0 ] && [ ! "$PKG_FILE" ]; then
 		while read -r PKG; do
 			append_to_pkg_lists
 		done <<-EOF
-		$(ls -1A "$PKG_REPO")
+		$(ls -1A "$SETDOTS_REPO")
 		EOF
 	fi
 
@@ -110,6 +111,12 @@ read_selected_packages() {
 }
 
 print_exit_selected_packages() {
+	PLATFORM_COLUMN=
+	INSTALL_COLUMN=
+	UNINSTALL_COLUMN=
+	CONFIG_COLUMN=
+	RM_CONFIG_COLUMN=
+
 	# Print header
 	printf "%-20s%-20s%-20s%-20s%-20s%-20s\n" "Package Name" "Platform" "Install" "Uninstall" "Setup" "Unset"
 	printf "=============================================================================================================\n"
@@ -119,34 +126,34 @@ print_exit_selected_packages() {
 		printf "%-20s" "$PKG"
 
 		PLATFORM_COLUMN='ALL'
-		if [ -f "$PKG_REPO/$PKG/platform" ]; then
-			PLATFORM_COLUMN="$(tr '\n' ',' < "$PKG_REPO/$PKG/platform" | sed 's/,$//')"
+		if [ -f "$SETDOTS_REPO/$PKG/platform" ]; then
+			PLATFORM_COLUMN="$(tr '\n' ',' < "$SETDOTS_REPO/$PKG/platform" | sed 's/,$//')"
 		fi
 		printf "%-20s" "$PLATFORM_COLUMN"
 
 		# "Install" and "Uninstall" columns
 		INSTALL_COLUMN=""; UNINSTALL_COLUMN=""; # Reset vars for each iteration
-		if [ -f "$PKG_REPO/$PKG/noinstall" ]; then
+		if [ -f "$SETDOTS_REPO/$PKG/noinstall" ]; then
 			INSTALL_COLUMN="NO INSTALL"
 		else
-			if [ -f "$PKG_REPO/$PKG/install" ]; then INSTALL_COLUMN="CUSTOM"; else INSTALL_COLUMN="DEFAULT"; fi
-			if [ -f "$PKG_REPO/$PKG/preinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, PRE"; fi
-			if [ -f "$PKG_REPO/$PKG/postinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, POST"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/install" ]; then INSTALL_COLUMN="CUSTOM"; else INSTALL_COLUMN="DEFAULT"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/preinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, PRE"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/postinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, POST"; fi
 
-			if [ -f "$PKG_REPO/$PKG/uninstall" ]; then UNINSTALL_COLUMN="CUSTOM"; else UNINSTALL_COLUMN="DEFAULT"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/uninstall" ]; then UNINSTALL_COLUMN="CUSTOM"; else UNINSTALL_COLUMN="DEFAULT"; fi
 		fi
 		printf "%-20s%-20s" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN"
 
 		# "Configure" and "RM Config" column
 		CONFIG_COLUMN="";RM_CONFIG_COLUMN=""; # Reset vars for each iteration
-		if [ -f "$PKG_REPO/$PKG/nosetup" ]; then
+		if [ -f "$SETDOTS_REPO/$PKG/nosetup" ]; then
 			CONFIG_COLUMN="NO SETUP"
 		else
-			if [ -f "$PKG_REPO/$PKG/setup" ]; then CONFIG_COLUMN="CUSTOM"; else CONFIG_COLUMN="DEFAULT"; fi
-			if [ -f "$PKG_REPO/$PKG/presetup" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, PRE"; fi
-			if [ -f "$PKG_REPO/$PKG/postsetup" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, POST"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/setup" ]; then CONFIG_COLUMN="CUSTOM"; else CONFIG_COLUMN="DEFAULT"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/presetup" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, PRE"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/postsetup" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, POST"; fi
 
-			if [ -f "$PKG_REPO/$PKG/unset" ]; then RM_CONFIG_COLUMN="CUSTOM"; else RM_CONFIG_COLUMN="DEFAULT"; fi
+			if [ -f "$SETDOTS_REPO/$PKG/unset" ]; then RM_CONFIG_COLUMN="CUSTOM"; else RM_CONFIG_COLUMN="DEFAULT"; fi
 		fi
 		printf "%-20s%-20s" "$CONFIG_COLUMN" "$RM_CONFIG_COLUMN"
 		printf "\n"
@@ -155,7 +162,7 @@ print_exit_selected_packages() {
 }
 
 execute_script() (
-	export PKG="$1" # Desc: package name
+	PKG="$1" # Desc: package name
 	DEFAULT_OR_CUSTOM="$2" # Values: 'default' | 'custom'
 	SCRIPT="$3" # Desc: path to the file to execute
 	NEXT_OPERATION="$4" # Desc: Name of the subsequent operation to be performed
@@ -201,10 +208,10 @@ dispatch_operations() {
 	prompt_continuation_or_exit
 
 	printf '%s\n' "$TARGET_PKGS" | while read -r PKG; do
-		PRE_OP="$PKG_REPO/$PKG/pre$OPERATION"
-		CUSTOM_OP="$PKG_REPO/$PKG/$OPERATION"
-		DEFAULT_OP="$PKG_REPO/default/$OPERATION"
-		POST_OP="$PKG_REPO/$PKG/post$OPERATION"
+		PRE_OP="$SETDOTS_REPO/$PKG/pre$OPERATION"
+		CUSTOM_OP="$SETDOTS_REPO/$PKG/$OPERATION"
+		DEFAULT_OP="$SETDOTS_REPO/default/$OPERATION"
+		POST_OP="$SETDOTS_REPO/$PKG/post$OPERATION"
 
 		if [ "$OPERATION" = 'install' ] || [ "$OPERATION" = 'setup' ] && [ -f "$PRE_OP" ]; then
 			execute_script "$PKG" "custom" "$PRE_OP" "$OPERATION" < /dev/tty

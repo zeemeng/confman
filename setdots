@@ -3,8 +3,18 @@
 set -e
 
 
+#--- DECLARE AND EXPORT GLOBAL VARIABLES ---#
+export SETDOTS_DIR="$(dirname "$(realpath "$0")")"
+export SETDOTS_PROMPT="${SETDOTS_PROMPT-1}" # Set default value **if** unassigned
+export SETDOTS_REPO="${SETDOTS_REPO-$SETDOTS_DIR/packages}" # Set default value **if** unassigned
+export SETDOTS_DEST="${SETDOTS_DEST-$HOME}" # Set default value **if** unassigned
+export SETDOTS_MGR="${SETDOTS_MGR-}"
+export PKG=''
+PKG_FILE=''
+DEFAULT_OPERATION=1
+
+
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
-SETDOTS_DIR="$(dirname "$(realpath "$0")")"
 . "$SETDOTS_DIR/lib/utils.sh"
 . "$SETDOTS_DIR/lib/validations.sh"
 . "$SETDOTS_DIR/lib/pkg_manager.sh"
@@ -12,13 +22,12 @@ SETDOTS_DIR="$(dirname "$(realpath "$0")")"
 
 
 #--- PARSE OPTIONS ---#
-DEFAULT_OPERATION=1 # Install and set up selected packages if no other option, except -f and -m, is specified
 OPTIND=1 # Reset OPTIND to 1 to clear any value potentially set by previous invocations of "getopts", as a safety measure.
 while getopts "vhHiIsuUrlf:m:d:p:g:" OPT; do
 	case "$OPT" in
-	v) v=1; print_version_exit;;
-	h) h=1; print_usage_exit;;
-	H) H=1; show_manpage_exit;;
+	v) print_version_exit;;
+	h) print_usage_exit;;
+	H) show_manpage_exit;;
 	i) i=1; DEFAULT_OPERATION=;;
 	I) I=1; DEFAULT_OPERATION=;;
 	s) s=1; DEFAULT_OPERATION=;;
@@ -26,29 +35,24 @@ while getopts "vhHiIsuUrlf:m:d:p:g:" OPT; do
 	U) U=1; DEFAULT_OPERATION=;;
 	r) r=1; DEFAULT_OPERATION=;;
 	l) l=1; DEFAULT_OPERATION=;;
-	f) f="$OPTARG";;
-	m) PKG_MANAGER="$OPTARG";;
-	d) PKG_CONFIG_DEST="$OPTARG";;
+	f) PKG_FILE="$OPTARG";;
+	m) SETDOTS_MGR="$OPTARG";;
+	d) SETDOTS_DEST="$OPTARG";;
 	p) SETDOTS_PROMPT="$OPTARG";;
-	g) PKG_REPO="$OPTARG";;
+	g) SETDOTS_REPO="$OPTARG";;
 	?) print_exit_usage;;
 	esac
 done
 shift $((OPTIND - 1))
-validate_option_combinations
 
 
 #--- VALIDATE AND EXPORT VARIABLES ---#
+validate_option_combinations
 validate_setdots_path
 validate_setdots_prompt
-validate_pkg_config_dest
-validate_pkg_repo
+validate_setdots_dest
+validate_setdots_repo
 if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
-export PKG_MANAGER
-export SETDOTS_DIR
-export SETDOTS_PROMPT
-export PKG_CONFIG_DEST
-export PKG_REPO
 
 
 #--- OPERATE ACCORDING TO OPTIONS ---#

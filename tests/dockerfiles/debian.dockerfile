@@ -5,7 +5,7 @@ RUN <<-EOF
 EOF
 USER tester
 COPY . /setdots
-ENV PKG_REPO=/setdots/tests/pkg_repo
+ENV SETDOTS_REPO=/setdots/tests/pkg_repo
 WORKDIR /setdots
 CMD [ "bash" ]
 

@@ -3,42 +3,43 @@
 # Technically unnecessary, since 'utils.sh' already sourced in main 'setdots' script, but re-sourcing for clarity.
 . "$SETDOTS_DIR/lib/utils.sh"
 
+select_pkg_mgr_from () {
+	for MGR; do
+		if command -v "$MGR" >/dev/null; then
+			SETDOTS_MGR="$MGR"
+			return 0
+		fi
+	done
+}
+
 validate_pkg_manager() {
-	_OS="$(uname -s)"
 	MINGW64_MGR="pacman"
 	DARWIN_MGR="brew" # Can be a space-separated list
 	LINUX_MGR="apt pacman brew" # Can be a space-separated list
 
-
-	if [ -z "$PKG_MANAGER" ]; then
-		case "$_OS" in
-			MINGW64*|MSYS*) PKG_MANAGER="$MINGW64_MGR";;
-			Darwin)
-				for MGR in $DARWIN_MGR; do
-					if command -v "$MGR" >/dev/null; then PKG_MANAGER="$MGR"; fi
-				done;;
-			*)
-				for MGR in $LINUX_MGR; do
-					if command -v "$MGR" >/dev/null; then PKG_MANAGER="$MGR"; fi
-				done;;
+	if [ -z "$SETDOTS_MGR" ]; then
+		case "$(uname -s)" in
+			MINGW64*|MSYS*) select_pkg_mgr_from $MINGW64_MGR ;;
+			Darwin) select_pkg_mgr_from $DARWIN_MGR ;;
+			*) select_pkg_mgr_from $LINUX_MGR ;;
 		esac
 	fi
 
-	if ! command -v "$PKG_MANAGER" >/dev/null; then
+	if ! command -v "$SETDOTS_MGR" >/dev/null; then
 		log_error "No suitable package manager was found."
 		exit 1
 	fi
 
-	unset _OS LINUX_MGR DARWIN_MGR MINGW64_MGR
+	unset LINUX_MGR DARWIN_MGR MINGW64_MGR
 }
 
 # Update/sync back-end package manager repositories with external sources. Set options and environment variables
 init_pkg_manager() {
-	[ "$PKG_MANAGER" = "apt" ] && sudo apt update && return
+	[ "$SETDOTS_MGR" = "apt" ] && sudo apt update && return
 
-	[ "$PKG_MANAGER" = "pacman" ] && sudo pacman -Sy && return
+	[ "$SETDOTS_MGR" = "pacman" ] && sudo pacman -Sy && return
 
-	if [ "$PKG_MANAGER" = "brew" ]; then
+	if [ "$SETDOTS_MGR" = "brew" ]; then
 		# Do not run `brew update --auto-update` before certain operations such as install
 		export HOMEBREW_NO_AUTO_UPDATE=1
 

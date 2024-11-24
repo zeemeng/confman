@@ -14,35 +14,26 @@ validate_setdots_path() {
 		exit 1
 	fi
 
-	unset EXEC_NAME
+	unset EXEC_NAME SETDOTS_PATH
 }
 
-validate_pkg_repo() {
-	# Set default value **if** unassigned
-	PKG_REPO="${PKG_REPO-$SETDOTS_DIR/packages}"
-
-	if ! { [ -d "$PKG_REPO" ] && [ -x "$PKG_REPO" ]; }; then # PKG_REPO specified, but cannot be read
+validate_setdots_repo() {
+	if ! { [ -d "$SETDOTS_REPO" ] && [ -x "$SETDOTS_REPO" ]; }; then # SETDOTS_REPO specified, but cannot be read
 		log_warning "Cannot read from the specified package repository.. Defaulting to '$SETDOTS_DIR/packages'."
-		PKG_REPO="$SETDOTS_DIR/packages"
+		SETDOTS_REPO="$SETDOTS_DIR/packages"
 		prompt_continuation_or_exit
 	fi
 }
 
-validate_pkg_config_dest() {
-	# Set default value **if** unassigned
-	PKG_CONFIG_DEST="${PKG_CONFIG_DEST-$HOME}"
-
-	if ! [ -d "$PKG_CONFIG_DEST" ]; then
-		log_warning "The specified package configuration destination '$PKG_CONFIG_DEST' is not a valid directory.. Defaulting to '$HOME'."
-		PKG_CONFIG_DEST="$HOME"
+validate_setdots_dest() {
+	if ! [ -d "$SETDOTS_DEST" ]; then
+		log_warning "The specified package configuration destination '$SETDOTS_DEST' is not a valid directory.. Defaulting to '$HOME'."
+		SETDOTS_DEST="$HOME"
 		prompt_continuation_or_exit
 	fi
 }
 
 validate_setdots_prompt() {
-	# Set default value **if** unassigned
-	SETDOTS_PROMPT="${SETDOTS_PROMPT-1}"
-
 	if { [ "$SETDOTS_PROMPT" != 0 ] && [ "$SETDOTS_PROMPT" != 1 ] && [ "$SETDOTS_PROMPT" != 2 ]; }; then
 		log_warning "The specified prompt level value '$SETDOTS_PROMPT' is invalid.. Defaulting to '1'."
 		SETDOTS_PROMPT=1
