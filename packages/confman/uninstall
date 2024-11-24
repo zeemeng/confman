@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+
+EXEC_DIR='/usr/local/bin'
+MAN_DIR='/usr/local/share/man/man1'
+
+printf "Requesting 'sudo' permission to perform the following actions:
+sudo rm -f $EXEC_DIR/confman
+
+"
+sudo rm -f "$EXEC_DIR/confman"
+
+printf "CONFMAN >>> Removed symlink for 'confman' executable: $EXEC_DIR/confman\n\n"
+
+printf "Requesting 'sudo' permission to perform the following actions:
+sudo rm -f $MAN_DIR/confman.1
+
+"
+sudo rm -f "$MAN_DIR/confman.1"
+
+printf "CONFMAN >>> Removed symlink for 'confman' man page: $MAN_DIR/confman.1\n\n"
+

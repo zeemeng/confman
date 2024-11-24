@@ -1,37 +1,37 @@
 #!/usr/bin/env sh
 
-SETDOTS_RED='\033[1;31m'
-SETDOTS_GREEN='\033[0;32m'
-SETDOTS_YELLOW='\033[0;33m'
-SETDOTS_BLUE='\033[0;36m'
-SETDOTS_NC='\033[0m' # No Color
-SETDOTS_PREFIX_NORMAL='SETDOTS: '
-SETDOTS_PREFIX_WARNING='WARNING: '
-SETDOTS_PREFIX_ERROR='ERROR: '
+CONFMAN_RED='\033[1;31m'
+CONFMAN_GREEN='\033[0;32m'
+CONFMAN_YELLOW='\033[0;33m'
+CONFMAN_BLUE='\033[0;36m'
+CONFMAN_NC='\033[0m' # No Color
+CONFMAN_PREFIX_NORMAL='CONFMAN: '
+CONFMAN_PREFIX_WARNING='WARNING: '
+CONFMAN_PREFIX_ERROR='ERROR: '
 
 log_info() {
-	printf "${SETDOTS_BLUE}${SETDOTS_PREFIX_NORMAL}${SETDOTS_NC}$@\n"
+	printf "${CONFMAN_BLUE}${CONFMAN_PREFIX_NORMAL}${CONFMAN_NC}$@\n"
 }
 
 log_success() {
-	printf "${SETDOTS_GREEN}${SETDOTS_PREFIX_NORMAL}$@${SETDOTS_NC}\n"
+	printf "${CONFMAN_GREEN}${CONFMAN_PREFIX_NORMAL}$@${CONFMAN_NC}\n"
 }
 
 log_warning() {
-	printf "${SETDOTS_YELLOW}${SETDOTS_PREFIX_WARNING}$@${SETDOTS_NC}\n" >&2
+	printf "${CONFMAN_YELLOW}${CONFMAN_PREFIX_WARNING}$@${CONFMAN_NC}\n" >&2
 }
 
 log_error() {
-	printf "${SETDOTS_RED}${SETDOTS_PREFIX_ERROR}$@${SETDOTS_NC}\n" >&2
+	printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}$@${CONFMAN_NC}\n" >&2
 }
 
 highlight_string() {
-	printf "${SETDOTS_BLUE}$@${SETDOTS_NC}"
+	printf "${CONFMAN_BLUE}$@${CONFMAN_NC}"
 }
 
 prompt_continuation_or_exit() {
-	# If SETDOTS_PROMPT is level 1 or level 2
-	if [ "$SETDOTS_PROMPT" -ge 1 ]; then
+	# If CONFMAN_PROMPT is level 1 or level 2
+	if [ "$CONFMAN_PROMPT" -ge 1 ]; then
 		printf 'Are you sure you want to continue? (y)es / (n)o: '
 		read RESPONSE
 		case "$RESPONSE" in

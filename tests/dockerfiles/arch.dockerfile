@@ -6,7 +6,7 @@ RUN <<-EOF
 	useradd -m -G sudo -p "$(openssl passwd -1 tester)" tester
 EOF
 USER tester
-COPY . /setdots
-WORKDIR /setdots
+COPY . /confman
+WORKDIR /confman
 CMD [ "bash" ]
 

@@ -1,7 +1,7 @@
 #/usr/bin/env
 
-IMAGE="setdots:$1"
-CONTAINER="setdots_$1"
+IMAGE="confman:$1"
+CONTAINER="confman_$1"
 
 docker container inspect "$CONTAINER" >/dev/null 2>&1 &&
 	docker stop "$CONTAINER" &&

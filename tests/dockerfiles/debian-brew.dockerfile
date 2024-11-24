@@ -13,8 +13,8 @@ RUN <<-EOF
 	eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 	echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
 EOF
-COPY . /setdots
-ENV SETDOTS_MGR=brew
-WORKDIR /setdots
+COPY . /confman
+ENV CONFMAN_MGR=brew
+WORKDIR /confman
 CMD [ "bash" ]
 

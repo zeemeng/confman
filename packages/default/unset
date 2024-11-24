@@ -25,11 +25,11 @@ recursive_unlink() (
 	fi
 )
 
-DATA_DIR="$SETDOTS_REPO/$PKG/data"
+DATA_DIR="$CONFMAN_REPO/$PKG/data"
 
 if [ -d "$DATA_DIR" ]; then
 	ls -1A "$DATA_DIR" | while read CONFIG; do
-		recursive_unlink "$DATA_DIR/$CONFIG" "$SETDOTS_DEST"
+		recursive_unlink "$DATA_DIR/$CONFIG" "$CONFMAN_DEST"
 	done
 fi
 

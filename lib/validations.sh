@@ -1,42 +1,42 @@
 #!/usr/bin/env sh
 
-# Technically unnecessary, since 'utils.sh' already sourced in main 'setdots' script, but re-sourcing for clarity.
-. "$SETDOTS_DIR/lib/utils.sh"
+# Technically unnecessary, since 'utils.sh' already sourced in main 'confman' script, but re-sourcing for clarity.
+. "$CONFMAN_DIR/lib/utils.sh"
 
 # Validate that the program is invoked appropriately and that the source directory could be found
-validate_setdots_path() {
-	EXEC_NAME=setdots
-	SETDOTS_PATH="$(realpath "$0")"
+validate_confman_path() {
+	EXEC_NAME=confman
+	CONFMAN_PATH="$(realpath "$0")"
 
-	if [ ! -f "$SETDOTS_PATH" ] || [ "$(basename "$SETDOTS_PATH")" != "$EXEC_NAME" ]; then
-		log_error 'The location of the `setdots` scripts cannot be determined. Are you sourcing the program via the `.` built-in? Please try executing `setdots` as a command or pass it as the parameter to a POSIX shell.'
+	if [ ! -f "$CONFMAN_PATH" ] || [ "$(basename "$CONFMAN_PATH")" != "$EXEC_NAME" ]; then
+		log_error 'The location of the `confman` scripts cannot be determined. Are you sourcing the program via the `.` built-in? Please try executing `confman` as a command or pass it as the parameter to a POSIX shell.'
 		sleep 2
 		exit 1
 	fi
 
-	unset EXEC_NAME SETDOTS_PATH
+	unset EXEC_NAME CONFMAN_PATH
 }
 
-validate_setdots_repo() {
-	if ! { [ -d "$SETDOTS_REPO" ] && [ -x "$SETDOTS_REPO" ]; }; then # SETDOTS_REPO specified, but cannot be read
-		log_warning "Cannot read from the specified package repository.. Defaulting to '$SETDOTS_DIR/packages'."
-		SETDOTS_REPO="$SETDOTS_DIR/packages"
+validate_confman_repo() {
+	if ! { [ -d "$CONFMAN_REPO" ] && [ -x "$CONFMAN_REPO" ]; }; then # CONFMAN_REPO specified, but cannot be read
+		log_warning "Cannot read from the specified package repository.. Defaulting to '$CONFMAN_DIR/packages'."
+		CONFMAN_REPO="$CONFMAN_DIR/packages"
 		prompt_continuation_or_exit
 	fi
 }
 
-validate_setdots_dest() {
-	if ! [ -d "$SETDOTS_DEST" ]; then
-		log_warning "The specified package configuration destination '$SETDOTS_DEST' is not a valid directory.. Defaulting to '$HOME'."
-		SETDOTS_DEST="$HOME"
+validate_confman_dest() {
+	if ! [ -d "$CONFMAN_DEST" ]; then
+		log_warning "The specified package configuration destination '$CONFMAN_DEST' is not a valid directory.. Defaulting to '$HOME'."
+		CONFMAN_DEST="$HOME"
 		prompt_continuation_or_exit
 	fi
 }
 
-validate_setdots_prompt() {
-	if { [ "$SETDOTS_PROMPT" != 0 ] && [ "$SETDOTS_PROMPT" != 1 ] && [ "$SETDOTS_PROMPT" != 2 ]; }; then
-		log_warning "The specified prompt level value '$SETDOTS_PROMPT' is invalid.. Defaulting to '1'."
-		SETDOTS_PROMPT=1
+validate_confman_prompt() {
+	if { [ "$CONFMAN_PROMPT" != 0 ] && [ "$CONFMAN_PROMPT" != 1 ] && [ "$CONFMAN_PROMPT" != 2 ]; }; then
+		log_warning "The specified prompt level value '$CONFMAN_PROMPT' is invalid.. Defaulting to '1'."
+		CONFMAN_PROMPT=1
 		prompt_continuation_or_exit
 	fi
 }

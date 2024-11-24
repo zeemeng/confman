@@ -4,21 +4,21 @@ set -e
 
 
 #--- DECLARE AND EXPORT GLOBAL VARIABLES ---#
-export SETDOTS_DIR="$(dirname "$(realpath "$0")")"
-export SETDOTS_PROMPT="${SETDOTS_PROMPT-1}" # Set default value **if** unassigned
-export SETDOTS_REPO="${SETDOTS_REPO-$SETDOTS_DIR/packages}" # Set default value **if** unassigned
-export SETDOTS_DEST="${SETDOTS_DEST-$HOME}" # Set default value **if** unassigned
-export SETDOTS_MGR="${SETDOTS_MGR-}"
+export CONFMAN_DIR="$(dirname "$(realpath "$0")")"
+export CONFMAN_PROMPT="${CONFMAN_PROMPT-1}" # Set default value **if** unassigned
+export CONFMAN_REPO="${CONFMAN_REPO-$CONFMAN_DIR/packages}" # Set default value **if** unassigned
+export CONFMAN_DEST="${CONFMAN_DEST-$HOME}" # Set default value **if** unassigned
+export CONFMAN_MGR="${CONFMAN_MGR-}"
 export PKG=''
 PKG_FILE=''
 DEFAULT_OPERATION=1
 
 
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
-. "$SETDOTS_DIR/lib/utils.sh"
-. "$SETDOTS_DIR/lib/validations.sh"
-. "$SETDOTS_DIR/lib/pkg_manager.sh"
-. "$SETDOTS_DIR/lib/operations.sh"
+. "$CONFMAN_DIR/lib/utils.sh"
+. "$CONFMAN_DIR/lib/validations.sh"
+. "$CONFMAN_DIR/lib/pkg_manager.sh"
+. "$CONFMAN_DIR/lib/operations.sh"
 
 
 #--- PARSE OPTIONS ---#
@@ -36,10 +36,10 @@ while getopts "vhHiIsuUrlf:m:d:p:g:" OPT; do
 	r) r=1; DEFAULT_OPERATION=;;
 	l) l=1; DEFAULT_OPERATION=;;
 	f) PKG_FILE="$OPTARG";;
-	m) SETDOTS_MGR="$OPTARG";;
-	d) SETDOTS_DEST="$OPTARG";;
-	p) SETDOTS_PROMPT="$OPTARG";;
-	g) SETDOTS_REPO="$OPTARG";;
+	m) CONFMAN_MGR="$OPTARG";;
+	d) CONFMAN_DEST="$OPTARG";;
+	p) CONFMAN_PROMPT="$OPTARG";;
+	g) CONFMAN_REPO="$OPTARG";;
 	?) print_exit_usage;;
 	esac
 done
@@ -48,10 +48,10 @@ shift $((OPTIND - 1))
 
 #--- VALIDATE AND EXPORT VARIABLES ---#
 validate_option_combinations
-validate_setdots_path
-validate_setdots_prompt
-validate_setdots_dest
-validate_setdots_repo
+validate_confman_path
+validate_confman_prompt
+validate_confman_dest
+validate_confman_repo
 if [ "$DEFAULT_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
 
 

@@ -2,14 +2,14 @@
 # To be run from root of Git repository
 
 VERSION_FILE='version'
-SRC_FILE='doc/src/setdots.1.md'
-OUT_FILE='doc/man/setdots.1'
+SRC_FILE='doc/src/confman.1.md'
+OUT_FILE='doc/man/confman.1'
 
 if [ -r "$VERSION_FILE" ] && [ -r "$SRC_FILE" ]; then
-	TITLE='SETDOTS'
+	TITLE='CONFMAN'
 	SECTION='1'
 	DATE="$(date +'%B %Y')"
-	FOOTER="setdots $(cat "$VERSION_FILE")"
+	FOOTER="confman $(cat "$VERSION_FILE")"
 
 	pandoc \
 		--standalone \

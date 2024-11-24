@@ -15,17 +15,17 @@ recursive_ln() (
 	fi
 )
 
-DATA_DIR="$SETDOTS_REPO/$PKG/data"
+DATA_DIR="$CONFMAN_REPO/$PKG/data"
 
 if [ -d "$DATA_DIR" ] && [ -r "$DATA_DIR" ]; then
-	mkdir -p "$SETDOTS_DEST"
+	mkdir -p "$CONFMAN_DEST"
 
 	while read CONFIG; do
 		# !! NON-POSIX feature available in BSD, GNU/Linux and MacOS: options -s and -v for command "cp"
 		# Disabled, since MacOS 14.1 has a bug with the "cp" utility where the "-s" option does not work as expected
 		#cp -Rsv "$DATA_DIR/$CONFIG" "$HOME"
 
-		recursive_ln "$DATA_DIR/$CONFIG" "$SETDOTS_DEST"
+		recursive_ln "$DATA_DIR/$CONFIG" "$CONFMAN_DEST"
 	done <<-EOF
 	$(ls -1A "$DATA_DIR")
 	EOF
