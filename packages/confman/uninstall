@@ -3,19 +3,19 @@
 EXEC_DIR='/usr/local/bin'
 MAN_DIR='/usr/local/share/man/man1'
 
-"$CONFMAN_LOG" warning "Requesting 'sudo' permission to perform the following actions:
+confman -L warning "Requesting 'sudo' permission to perform the following actions:
 sudo rm -f $EXEC_DIR/confman
 
 "
 sudo rm -f "$EXEC_DIR/confman"
 
-"$CONFMAN_LOG" info "Removed symlink for $("$CONFMAN_LOG" hl_blue 'confman') executable: $EXEC_DIR/confman\n\n"
+confman -L info "Removed symlink for $(confman -L hl_blue 'confman') executable: $EXEC_DIR/confman\n\n"
 
-"$CONFMAN_LOG" warning "Requesting 'sudo' permission to perform the following actions:
+confman -L warning "Requesting 'sudo' permission to perform the following actions:
 sudo rm -f $MAN_DIR/confman.1
 
 "
 sudo rm -f "$MAN_DIR/confman.1"
 
-"$CONFMAN_LOG" info "Removed symlink for $("$CONFMAN_LOG" hl_blue 'confman') man page: $MAN_DIR/confman.1\n\n"
+confman -L info "Removed symlink for $(confman -L hl_blue 'confman') man page: $MAN_DIR/confman.1\n\n"
 
