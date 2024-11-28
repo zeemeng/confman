@@ -57,17 +57,15 @@ append_to_pkg_lists() {
 	# of the output of `uname -s`, continue processing, else return.
 	if [ -f "$PKG_DIR/platform" ] && ! is_platform_compatible "$PKG_DIR/platform"; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; return 0; fi
 
-	if [ -f "$PKG_DIR/noinstall" ] && [ -f "$PKG_DIR/noconfigure" ]; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; return 0; fi
+	DO_INSTALL=1
+	DO_CONFIGURE=1
+	if [ -f "$PKG_DIR/noinstall" ]; then unset -v DO_INSTALL; fi
+	if [ -f "$PKG_DIR/noconfigure" ]; then unset -v DO_CONFIGURE; fi
+	if [ ! -d "$PKG_DIR/data" ] && [ ! -f "$PKG_DIR/preconfigure" ] && [ ! -f "$PKG_DIR/configure" ]; then unset -v DO_CONFIGURE; fi
 
-	if [ -f "$PKG_DIR/noinstall" ]; then SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'; return 0; fi
-
-	if [ -f "$PKG_DIR/noconfigure" ]; then INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'; return 0; fi
-
-	if [ -d "$PKG_DIR" ]; then
-		SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'
-		INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'
-		return
-	fi
+	if [ "$DO_CONFIGURE" ]; then SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'; fi
+	if [ "$DO_INSTALL" ]; then INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'; fi
+	if [ ! "$DO_CONFIGURE" ] && [ ! "$DO_INSTALL" ]; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; fi
 }
 
 read_selected_packages() {
@@ -94,18 +92,19 @@ read_selected_packages() {
 
 	# Sort and remove duplicate items in PKG lists
 	REQUESTED_PKGS="$(printf "$REQUESTED_PKGS" | sort -u)"
+	UNDEFINED_PKGS="$(printf "$UNDEFINED_PKGS" | sort -u)"
 	INSTALL_PKGS="$(printf "$INSTALL_PKGS" | sort -u)"
 	SETUP_PKGS="$(printf "$SETUP_PKGS" | sort -u)"
 	SKIP_PKGS="$(printf "$SKIP_PKGS" | sort -u)"
 
 	if [ "$UNDEFINED_PKGS" ]; then
 		confman_log warning "Skipping package(s) not defined in the confman repository:"
-		printf "$UNDEFINED_PKGS\n"
+		printf "$UNDEFINED_PKGS\n\n"
 	fi
 
 	if [ "$l" != 1 ] && [ "$SKIP_PKGS" ]; then
 		confman_log warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
-		printf "$SKIP_PKGS\n"
+		printf "$SKIP_PKGS\n\n"
 	fi
 }
 
@@ -116,10 +115,12 @@ print_selected_packages() {
 	if [ -z "$REQUESTED_PKGS" ]; then confman_log info 'No confman managed package to list..'; return 0; fi
 
 	get_column_label () {
-		if [ -f "$PKG_DIR/$1" ]; then LABEL='CUSTOM'; else LABEL='default'; fi
+		LABEL='default'
+		if [ "$1" = 'configure' ] || [ "$1" = 'unconfigure' ] && [ ! -d "$PKG_DIR/data" ]; then LABEL='NO DATA'; fi
+		if [ -f "$PKG_DIR/$1" ]; then LABEL='CUSTOM'; fi
 		case "$1" in
 			install|configure)
-				if [ -f "$PKG_DIR/pre$1" ]; then LABEL="${LABEL}, PRE"; fi
+				if [ -f "$PKG_DIR/pre$1" ]; then LABEL="PRE, ${LABEL}"; fi
 				if [ -f "$PKG_DIR/post$1" ]; then LABEL="${LABEL}, POST"; fi
 				if [ -f "$PKG_DIR/no$1" ]; then LABEL="$(printf "no $1" | tr '[:lower:]' '[:upper:]')"; fi;;
 			uninstall|unconfigure)
@@ -127,7 +128,7 @@ print_selected_packages() {
 		esac
 		case "$LABEL" in
 			'default') print_blue "$LABEL";;
-			'NO*') print_red "$LABEL";;
+			NO*) print_red "$LABEL";;
 			*) print_yellow "$LABEL";;
 		esac
 	}
@@ -163,8 +164,9 @@ print_selected_packages() {
 		CONFIG_COLUMN="$(get_column_label configure)"
 		UNCONFIG_COLUMN="$(get_column_label unconfigure)"
 
-		printf "$PRINTF_FORMAT\n" "$PKG_COLUMN" "$PLATFORM_COLUMN" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN" "$CONFIG_COLUMN" "$UNCONFIG_COLUMN"
+		printf "$PRINTF_FORMAT" "$PKG_COLUMN" "$PLATFORM_COLUMN" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN" "$CONFIG_COLUMN" "$UNCONFIG_COLUMN"
 	done
+	printf '\n'
 }
 
 dispatch_d_task () {
@@ -215,7 +217,7 @@ dispatch_operations() {
 
 	# Update/sync back-end package manager repositories. Set options and environment variables
 	case "$1" in
-		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && execute_task update;;
+		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && execute_task update; printf '\n';;
 		configure | unconfigure) TARGET_PKGS="$SETUP_PKGS";;
 		*) confman_log error "unrecognized argument value passed to function 'dispatch_operations': $1" && return 1;;
 	esac

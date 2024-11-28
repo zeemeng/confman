@@ -11,7 +11,7 @@ print_yellow () { printf "$CONFMAN_YELLOW$@$CONFMAN_NC"; }
 prompt_continuation_or_exit() {
 	# If CONFMAN_PROMPT is level 1 or level 2
 	if [ "$CONFMAN_PROMPT" -ge 1 ]; then
-		printf 'Are you sure you want to continue? (y)es / (n)o: '
+		printf 'Are you sure you want to continue? (y)es / (N)o: '
 		read RESPONSE
 		case "$RESPONSE" in
 			Y*|y*) printf '\n'; return 0;;
@@ -28,7 +28,9 @@ is_platform_compatible() {
 		return 1
 	fi
 
-	uname -s | grep -i -q -f "$1"
+	sed '/^[[:space:]]*$/d' "$1" | while read -r PATTERN; do
+		uname -s | grep -i -q "$PATTERN" && return 0
+	done
 }
 
 fix_permission_execute() {
