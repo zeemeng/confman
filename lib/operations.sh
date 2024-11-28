@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-unset -v REQUESTED_PKGS INSTALL_PKGS SETUP_PKGS SKIP_PKGS PKG_DIR
-
 print_usage_exit() {
 	cat <<- EOF
 	USAGE:
@@ -26,18 +24,20 @@ show_manpage_exit() {
 	exit 0
 }
 
-find_data_path () {
-	if [ -d "$CONFMAN_ROOT/packages" ]; then printf "$CONFMAN_ROOT"; return 0; fi
+locate_data_path () {
 	if [ -d "$HOME/.confman" ]; then printf "$HOME/.confman"; return 0; fi
 	if [ "$XDG_CONFIG_HOME" ] && [ -d "$XDG_CONFIG_HOME/confman" ]; then printf "$XDG_CONFIG_HOME/confman"; return 0; fi
 	if [ -d "$HOME/.config/confman" ]; then printf "$HOME/.config/confman"; return 0; fi
+	printf "$HOME/.confman"
 }
 
-warn_about_skipped_packages() {
-	if [ -z "$SKIP_PKGS" ]; then return; fi
-
-	confman_log warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
-	printf "$SKIP_PKGS\n\n"
+add_bindir_to_PATH () {
+	case "$PATH" in
+		*"$CONFMAN_BIN_PATH"*) ;;
+		'') PATH="$CONFMAN_BIN_PATH";;
+		':') PATH="$CONFMAN_BIN_PATH:";;
+		*) PATH="$CONFMAN_BIN_PATH:$PATH";;
+	esac
 }
 
 # Depends on pre-defined variables: CONFMAN_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS
@@ -47,33 +47,21 @@ append_to_pkg_lists() {
 	# Check if PKG contains any non-whitespace character. If it does, continue, otherwise return
 	if ! echo "$PKG" | grep -q "[^[:space:]]"; then return; fi
 
-	# Skip the meta package 'default' which holds the default PKG scripts
-	if [ "default" = "$PKG" ]; then return; fi
+	# PKGs not defined in a confman config repository are not processed
+	if [ ! -d "$PKG_DIR" ]; then UNDEFINED_PKGS="${UNDEFINED_PKGS}${PKG}"$'\n'; return 0; fi
 
 	# Append to the list of requested pkgs
 	REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}"$'\n'
 
 	# If any line in the "$PKG_DIR/platform" file is a case insensitive BRE matching any part
 	# of the output of `uname -s`, continue processing, else return.
-	if [ -f "$PKG_DIR/platform" ] && ! is_platform_compatible "$PKG_DIR/platform"; then
-		SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'
-		return
-	fi
+	if [ -f "$PKG_DIR/platform" ] && ! is_platform_compatible "$PKG_DIR/platform"; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; return 0; fi
 
-	if [ -f "$PKG_DIR/noinstall" ] && [ -f "$PKG_DIR/noconfigure" ]; then
-		SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'
-		return
-	fi
+	if [ -f "$PKG_DIR/noinstall" ] && [ -f "$PKG_DIR/noconfigure" ]; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; return 0; fi
 
-	if [ -f "$PKG_DIR/noinstall" ]; then
-		SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'
-		return
-	fi
+	if [ -f "$PKG_DIR/noinstall" ]; then SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'; return 0; fi
 
-	if [ -f "$PKG_DIR/noconfigure" ]; then
-		INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'
-		return
-	fi
+	if [ -f "$PKG_DIR/noconfigure" ]; then INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'; return 0; fi
 
 	if [ -d "$PKG_DIR" ]; then
 		SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'
@@ -83,26 +71,24 @@ append_to_pkg_lists() {
 }
 
 read_selected_packages() {
+	unset -v UNDEFINED_PKGS REQUESTED_PKGS INSTALL_PKGS SETUP_PKGS SKIP_PKGS
+
 	# Select packages from operands
 	for PKG in "$@"; do append_to_pkg_lists; done
 
 	# If specified file exists and can be read, select packages from file line-by-line
 	if [ -f "$PKG_FILE" ] && [ -r "$PKG_FILE" ]; then
 		while read -r PKG; do append_to_pkg_lists; done < "$PKG_FILE"
-
-	# Specified file exists, but cannot be read
 	elif [ "$PKG_FILE" ]; then
 		confman_log warning "Cannot read package list file. Defaulting to select all packages from repository."
 		prompt_continuation_or_exit
-		unset f;
+		unset -v PKG_FILE;
 	fi
 
 	# If no operand and no package-list file is specified, select all packages from the target package repository
 	if [ "$#" -eq 0 ] && [ ! "$PKG_FILE" ]; then
-		while read -r PKG; do
-			if [ -d "$CONFMAN_REPO/$PKG" ]; then append_to_pkg_lists; fi
-		done <<-EOF
-		$(ls -1AL "$CONFMAN_REPO")
+		while read -r PKG; do if [ -d "$CONFMAN_REPO/$PKG" ]; then append_to_pkg_lists; fi; done <<-EOF
+			$(ls -1AL "$CONFMAN_REPO")
 		EOF
 	fi
 
@@ -111,75 +97,74 @@ read_selected_packages() {
 	INSTALL_PKGS="$(printf "$INSTALL_PKGS" | sort -u)"
 	SETUP_PKGS="$(printf "$SETUP_PKGS" | sort -u)"
 	SKIP_PKGS="$(printf "$SKIP_PKGS" | sort -u)"
+
+	if [ "$UNDEFINED_PKGS" ]; then
+		confman_log warning "Skipping package(s) not defined in the confman repository:"
+		printf "$UNDEFINED_PKGS\n"
+	fi
+
+	if [ "$l" != 1 ] && [ "$SKIP_PKGS" ]; then
+		confman_log warning "Skipping the following package(s) as they do not support the requested operation(s) on the current platform:"
+		printf "$SKIP_PKGS\n"
+	fi
 }
 
 print_selected_packages() {
 	unset -v PKG_COLUMN PLATFORM_COLUMN INSTALL_COLUMN UNINSTALL_COLUMN CONFIG_COLUMN UNCONFIG_COLUMN
+	PRINTF_FORMAT='%-31s%-31s%-31s%-31s%-31s%-31s\n'
+
+	if [ -z "$REQUESTED_PKGS" ]; then confman_log info 'No confman managed package to list..'; return 0; fi
+
+	get_column_label () {
+		if [ -f "$PKG_DIR/$1" ]; then LABEL='CUSTOM'; else LABEL='default'; fi
+		case "$1" in
+			install|configure)
+				if [ -f "$PKG_DIR/pre$1" ]; then LABEL="${LABEL}, PRE"; fi
+				if [ -f "$PKG_DIR/post$1" ]; then LABEL="${LABEL}, POST"; fi
+				if [ -f "$PKG_DIR/no$1" ]; then LABEL="$(printf "no $1" | tr '[:lower:]' '[:upper:]')"; fi;;
+			uninstall|unconfigure)
+				if [ -f "$PKG_DIR/no${1#'un'}" ]; then LABEL="$(printf "no ${1#'un'}" | tr '[:lower:]' '[:upper:]')"; fi;;
+		esac
+		case "$LABEL" in
+			'default') print_blue "$LABEL";;
+			'NO*') print_red "$LABEL";;
+			*) print_yellow "$LABEL";;
+		esac
+	}
 
 	# Print header
-	printf "%-31s%-31s%-31s%-31s%-31s%-31s\n" "`print_blue Package Name`" "`print_blue Platform`" "`print_blue Install`" "`print_blue Uninstall`" "`print_blue Configure`" "`print_blue Unconfigure`"
-	printf "===============================================================================================================\n"
+	printf "$PRINTF_FORMAT" \
+		"`print_blue Package Name`" \
+		"`print_blue Platform`" \
+		"`print_blue Install`" \
+		"`print_blue Uninstall`" \
+		"`print_blue Configure`" \
+		"`print_blue Unconfigure`"
+	printf '%111s\n' | tr ' ' '='
 
+	# Print PKG rows
 	printf '%s\n' "$REQUESTED_PKGS" | while read -r PKG; do
+		# Early return on blank lines
+		if [ -z "$PKG" ]; then continue; fi
 		PKG_DIR="$CONFMAN_REPO/$PKG"
 
 		# "Package Name" column
-		PKG_COLUMN="$(confman_log hl_blue "$PKG")"
+		PKG_COLUMN="$(print_blue "$PKG")"
 
 		# "Platform" column
+		PLATFORM_COLUMN=`print_green All`
 		if [ -f "$PKG_DIR/platform" ]; then
-			PLATFORM_COLUMN="$(sed -E -e ':a' -e 'N' -e '$!ba' -e 's/\n+/,/g; s/,$//' "$PKG_DIR/platform")"
-			PLATFORM_COLUMN=`print_yellow "$PLATFORM_COLUMN"`
-		else
-			PLATFORM_COLUMN=`print_green All`
+			PLATFORM_COLUMN=`print_yellow "$(sed -E -e ':a' -e 'N' -e '$!ba' -e 's/\n+/,/g; s/,$//' "$PKG_DIR/platform")"`
 		fi
 
-		# "Install" and "Uninstall" columns
-		INSTALL_COLUMN=''; UNINSTALL_COLUMN=''; # Reset vars for each iteration
-		if [ -f "$PKG_DIR/noinstall" ]; then
-			INSTALL_COLUMN='NO INSTALL'
-			UNINSTALL_COLUMN='NO INSTALL'
-		else
-			if [ -f "$PKG_DIR/install" ]; then INSTALL_COLUMN='CUSTOM'; else INSTALL_COLUMN='default'; fi
-			if [ -f "$PKG_DIR/preinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, PRE"; fi
-			if [ -f "$PKG_DIR/postinstall" ]; then INSTALL_COLUMN="${INSTALL_COLUMN}, POST"; fi
-			if [ -f "$PKG_DIR/uninstall" ]; then UNINSTALL_COLUMN='CUSTOM'; else UNINSTALL_COLUMN='default'; fi
-		fi
-		case "$INSTALL_COLUMN" in
-			'default') INSTALL_COLUMN=`print_blue "$INSTALL_COLUMN"`;;
-			'NO INSTALL') INSTALL_COLUMN=`print_red "$INSTALL_COLUMN"`;;
-			*) INSTALL_COLUMN=`print_yellow "$INSTALL_COLUMN"`
-		esac
-		case "$UNINSTALL_COLUMN" in
-			'default') UNINSTALL_COLUMN=`print_blue "$UNINSTALL_COLUMN"`;;
-			'NO INSTALL') UNINSTALL_COLUMN=`print_red "$UNINSTALL_COLUMN"`;;
-			*) UNINSTALL_COLUMN=`print_yellow "$UNINSTALL_COLUMN"`
-		esac
+		# "Install", "Uninstall", "Configure", "Unconfigure" columns
+		INSTALL_COLUMN="$(get_column_label install)"
+		UNINSTALL_COLUMN="$(get_column_label uninstall)"
+		CONFIG_COLUMN="$(get_column_label configure)"
+		UNCONFIG_COLUMN="$(get_column_label unconfigure)"
 
-		# "Configure" and "Unconfigure" column
-		CONFIG_COLUMN=''; UNCONFIG_COLUMN=''; # Reset vars for each iteration
-		if [ -f "$PKG_DIR/noconfigure" ]; then
-			CONFIG_COLUMN="NO CONFIGURE"
-			UNCONFIG_COLUMN="NO CONFIGURE"
-		else
-			if [ -f "$PKG_DIR/configure" ]; then CONFIG_COLUMN="CUSTOM"; else CONFIG_COLUMN="default"; fi
-			if [ -f "$PKG_DIR/preconfigure" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, PRE"; fi
-			if [ -f "$PKG_DIR/postconfigure" ]; then CONFIG_COLUMN="${CONFIG_COLUMN}, POST"; fi
-			if [ -f "$PKG_DIR/unconfigure" ]; then UNCONFIG_COLUMN="CUSTOM"; else UNCONFIG_COLUMN="default"; fi
-		fi
-		case "$CONFIG_COLUMN" in
-			'default') CONFIG_COLUMN=`print_blue "$CONFIG_COLUMN"`;;
-			'NO CONFIGURE') CONFIG_COLUMN=`print_red "$CONFIG_COLUMN"`;;
-			*) CONFIG_COLUMN=`print_yellow "$CONFIG_COLUMN"`
-		esac
-		case "$UNCONFIG_COLUMN" in
-			'default') UNCONFIG_COLUMN=`print_blue "$UNCONFIG_COLUMN"`;;
-			'NO CONFIGURE') UNCONFIG_COLUMN=`print_red "$UNCONFIG_COLUMN"`;;
-			*) UNCONFIG_COLUMN=`print_yellow "$UNCONFIG_COLUMN"`
-		esac
-		printf '%-31s%-31s%-31s%-31s%-31s%-31s\n' "$PKG_COLUMN" "$PLATFORM_COLUMN" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN" "$CONFIG_COLUMN" "$UNCONFIG_COLUMN"
+		printf "$PRINTF_FORMAT\n" "$PKG_COLUMN" "$PLATFORM_COLUMN" "$INSTALL_COLUMN" "$UNINSTALL_COLUMN" "$CONFIG_COLUMN" "$UNCONFIG_COLUMN"
 	done
-	printf '\n'
 }
 
 dispatch_d_task () {
@@ -192,7 +177,6 @@ dispatch_d_task () {
 		update|install|uninstall|configure|unconfigure) execute_task "$D_OPTARG";;
 		*) confman_log error "unrecognized argument value passed to option '-D': $1"; print_usage_exit;;
 	esac
-	exit 0
 }
 
 execute_task() (
@@ -215,14 +199,9 @@ execute_task() (
 			SCRIPT="$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$SCRIPT_NAME";;
 	esac
 
-	if [ "$SCRIPT_NAME" = "update" ]; then
-		fix_permission_execute "$SCRIPT"
-		return;
-	fi
+	if [ "$SCRIPT_NAME" = "update" ]; then fix_permission_execute "$SCRIPT"; return 0; fi
 
-	if [ ! "$D_OPTARG" ]; then
-		confman_log info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$SCRIPT_NAME") for $(print_blue "$PKG")"
-	fi
+	if [ ! "$D_OPTARG" ]; then confman_log info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$SCRIPT_NAME") for $(print_blue "$PKG")"; fi
 
 	if fix_permission_execute "$SCRIPT"; then
 		confman_log success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
@@ -255,20 +234,10 @@ dispatch_operations() {
 		case "$1" in
 			install | configure)
 				if [ -f "$PKG_DIR/pre$1" ]; then execute_task "pre$1"; fi
-				if [ -f "$PKG_DIR/$1" ]; then
-					execute_task "custom_$1"
-				else
-					execute_task "$1"
-				fi
-				if [ -f "$PKG_DIR/post$1" ]; then execute_task "post$1"; fi
-			;;
+				if [ -f "$PKG_DIR/$1" ]; then execute_task "custom_$1"; else execute_task "$1"; fi
+				if [ -f "$PKG_DIR/post$1" ]; then execute_task "post$1"; fi;;
 			uninstall | unconfigure)
-				if [ -f "$PKG_DIR/$1" ]; then
-					execute_task "custom_$1"
-				else
-					execute_task "$1"
-				fi
-			;;
+				if [ -f "$PKG_DIR/$1" ]; then execute_task "custom_$1"; else execute_task "$1"; fi;;
 		esac < "$INPUT_DEVICE"
 	done
 }

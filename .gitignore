@@ -1,6 +1,7 @@
 # local and private files/dirctories
 *local
 *private
+/packages/
 
 # build dirctories
 build

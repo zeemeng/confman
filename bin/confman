@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-export CONFMAN_BIN_PATH CONFMAN_LIB_PATH CONFMAN_MAN_PATH CONFMAN_VERSION CONFMAN_PROMPT CONFMAN_REPO CONFMAN_DEST CONFMAN_MGR PKG
+export CONFMAN_PROMPT CONFMAN_REPO CONFMAN_DEST CONFMAN_MGR PKG
 
 
 #--- GLOBAL VARIABLES SUBJECT TO CHANGE FROM MAKEFILE ---#
@@ -20,7 +20,7 @@ CONFMAN_VERSION="$(cat "$CONFMAN_ROOT/version")"
 
 
 #--- OTHER GLOBAL VARIABLES ---#
-CONFMAN_DATA_PATH="$(find_data_path)"
+CONFMAN_DATA_PATH="$(locate_data_path)"
 CONFMAN_PROMPT="${CONFMAN_PROMPT-1}" # Set default value **if** unassigned
 CONFMAN_REPO="${CONFMAN_REPO-$CONFMAN_DATA_PATH/packages}" # Set default value **if** unassigned
 CONFMAN_DEST="${CONFMAN_DEST-$HOME}" # Set default value **if** unassigned
@@ -74,16 +74,7 @@ read_selected_packages "$@"
 
 if [ "$l" ]; then print_selected_packages; exit 0; fi
 
-warn_about_skipped_packages
-
-if [ "$BOOTSTRAP_FLAG" ]; then
-	case "$PATH" in
-		*"$CONFMAN_BIN_PATH"*) ;;
-		'') PATH="$CONFMAN_BIN_PATH";;
-		':') PATH="$CONFMAN_BIN_PATH:";;
-		*) PATH="$CONFMAN_BIN_PATH:$PATH";;
-	esac
-fi
+if [ "$BOOTSTRAP_FLAG" ]; then add_bindir_to_PATH; fi
 
 if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
 	dispatch_operations 'install'
