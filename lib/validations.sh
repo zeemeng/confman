@@ -9,6 +9,8 @@ validate_confman_repo() {
 }
 
 validate_confman_dest() {
+	if [ "$D_OPTARG" = 'configure' ] || [ "$D_OPTARG" = 'unconfigure' ]; then mkdir -p "$CONFMAN_DEST"; fi
+
 	if ! [ -d "$CONFMAN_DEST" ]; then
 		confman_log warning "The specified package configuration destination '$CONFMAN_DEST' is not a valid directory.. Defaulting to '$HOME'."
 		CONFMAN_DEST="$HOME"
