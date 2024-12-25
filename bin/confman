@@ -67,7 +67,7 @@ if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; t
 #--- OPERATE ACCORDING TO OPTIONS ---#
 if [ "$LOG_LEVEL" ]; then confman_log "$LOG_LEVEL" "$@"; exit 0; fi
 
-if [ "$D_OPTARG" ]; then dispatch_d_task "$@"; exit 0; fi
+if [ "$D_OPTARG" ]; then dispatch_default_op "$@"; exit 0; fi
 
 # Read list of selected packages from parameters and repository
 read_selected_packages "$@"
@@ -77,18 +77,18 @@ if [ "$l" ]; then print_selected_packages; exit 0; fi
 if [ "$BOOTSTRAP_FLAG" ]; then add_bindir_to_PATH; fi
 
 if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ]; then
-	dispatch_operations 'install'
+	dispatch_operation 'install'
 fi
 
 if [ -z "$CUSTOM_OPERATION" ] || [ "$c" ] || [ "$I" ]; then
-	dispatch_operations 'configure'
+	dispatch_operation 'configure'
 fi
 
 if [ "$u" ] || [ "$U" ]; then
-	dispatch_operations 'uninstall'
+	dispatch_operation 'uninstall'
 fi
 
 if [ "$x" ] || [ "$U" ]; then
-	dispatch_operations 'unconfigure'
+	dispatch_operation 'unconfigure'
 fi
 

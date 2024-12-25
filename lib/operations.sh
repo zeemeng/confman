@@ -169,55 +169,56 @@ print_selected_packages() {
 	printf '\n'
 }
 
-dispatch_d_task () {
+dispatch_default_op () {
 	case "$#" in
 		0) ;;
 		1) PKG="$1";;
 		*) confman_log error 'too many operands'; print_usage_exit;;
 	esac
 	case "$D_OPTARG" in
-		update|install|uninstall|configure|unconfigure) execute_task "$D_OPTARG";;
+		update|install|uninstall|configure|unconfigure) execute_operation "$D_OPTARG";;
 		*) confman_log error "unrecognized argument value passed to option '-D': $1"; print_usage_exit;;
 	esac
 }
 
-execute_task() (
-	unset -v DEFAULT_OR_CUSTOM SCRIPT SCRIPT_NAME
+execute_operation() (
+	unset -v DEFAULT_OR_CUSTOM SCRIPT
 
 	case "$1" in
-		custom_*) SCRIPT_NAME="${1#custom_}";;
-		*) SCRIPT_NAME="$1";;
-	esac
-
-	case "$1" in
-		pre*|post*|custom_*)
+		update)
+			fix_permission_execute "$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$1"; return $?;;
+		pre*|post*)
 			DEFAULT_OR_CUSTOM='custom'
-			SCRIPT="$CONFMAN_REPO/$PKG/$SCRIPT_NAME";;
+			SCRIPT="$CONFMAN_REPO/$PKG/$1";;
+		custom)
+			DEFAULT_OR_CUSTOM='custom'
+			SCRIPT="$CONFMAN_REPO/$PKG/$2"
+			set -- "$2";;
 		configure|unconfigure)
 			DEFAULT_OR_CUSTOM='default'
-			SCRIPT="$CONFMAN_LIB_PATH/$SCRIPT_NAME";;
-		*)
+			SCRIPT="$CONFMAN_LIB_PATH/default_op/$1";;
+		install|uninstall)
 			DEFAULT_OR_CUSTOM='default'
-			SCRIPT="$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$SCRIPT_NAME";;
+			SCRIPT="$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$1";;
 	esac
 
-	if [ "$SCRIPT_NAME" = "update" ]; then fix_permission_execute "$SCRIPT"; return 0; fi
-
-	if [ ! "$D_OPTARG" ]; then confman_log info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$SCRIPT_NAME") for $(print_blue "$PKG")"; fi
+	if [ ! "$D_OPTARG" ]; then
+		confman_log info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$1") for $(print_blue "$PKG")"
+	fi
 
 	if fix_permission_execute "$SCRIPT"; then
-		confman_log success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
+		confman_log success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$1\" for \"$PKG\"\n"
 	else
-		confman_log error "An error occured during $DEFAULT_OR_CUSTOM \"$SCRIPT_NAME\" for \"$PKG\"\n"
+		confman_log error "An error occured during $DEFAULT_OR_CUSTOM \"$1\" for \"$PKG\"\n"
 	fi
 )
 
-dispatch_operations() {
+dispatch_operation() {
 	unset -v TARGET_PKGS INPUT_DEVICE PKG_DIR
 
 	# Update/sync back-end package manager repositories. Set options and environment variables
 	case "$1" in
-		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && execute_task update; printf '\n';;
+		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && execute_operation update; printf '\n';;
 		configure | unconfigure) TARGET_PKGS="$SETUP_PKGS";;
 		*) confman_log error "unrecognized argument value passed to function 'dispatch_operations': $1" && return 1;;
 	esac
@@ -235,11 +236,11 @@ dispatch_operations() {
 		PKG_DIR="$CONFMAN_REPO/$PKG"
 		case "$1" in
 			install | configure)
-				if [ -f "$PKG_DIR/pre$1" ]; then execute_task "pre$1"; fi
-				if [ -f "$PKG_DIR/$1" ]; then execute_task "custom_$1"; else execute_task "$1"; fi
-				if [ -f "$PKG_DIR/post$1" ]; then execute_task "post$1"; fi;;
+				if [ -f "$PKG_DIR/pre$1" ]; then execute_operation pre "pre$1"; fi
+				if [ -f "$PKG_DIR/$1" ]; then execute_operation custom "$1"; else execute_operation "$1"; fi
+				if [ -f "$PKG_DIR/post$1" ]; then execute_operation "post$1"; fi;;
 			uninstall | unconfigure)
-				if [ -f "$PKG_DIR/$1" ]; then execute_task "custom_$1"; else execute_task "$1"; fi;;
+				if [ -f "$PKG_DIR/$1" ]; then execute_operation custom "$1"; else execute_operation "$1"; fi;;
 		esac < "$INPUT_DEVICE"
 	done
 }
