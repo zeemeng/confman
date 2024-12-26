@@ -40,6 +40,12 @@ add_bindir_to_PATH () {
 	esac
 }
 
+append_skip_list () { SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; }
+append_undefined_list () { UNDEFINED_PKGS="${UNDEFINED_PKGS}${PKG}"$'\n'; }
+append_requested_list () { REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}"$'\n'; }
+append_install_list () { INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'; }
+append_configure_list () { SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'; }
+
 # Depends on pre-defined variables: CONFMAN_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS
 append_to_pkg_lists() {
 	PKG_DIR="$CONFMAN_REPO/$PKG"
@@ -48,24 +54,20 @@ append_to_pkg_lists() {
 	if ! echo "$PKG" | grep -q "[^[:space:]]"; then return; fi
 
 	# PKGs not defined in a confman config repository are not processed
-	if [ ! -d "$PKG_DIR" ]; then UNDEFINED_PKGS="${UNDEFINED_PKGS}${PKG}"$'\n'; return 0; fi
+	if [ ! -d "$PKG_DIR" ]; then append_undefined_list; return 0; fi
 
 	# Append to the list of requested pkgs
-	REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}"$'\n'
+	append_requested_list
 
-	# If any line in the "$PKG_DIR/platform" file is a case insensitive BRE matching any part
-	# of the output of `uname -s`, continue processing, else return.
-	if [ -f "$PKG_DIR/platform" ] && ! is_platform_compatible "$PKG_DIR/platform"; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; return 0; fi
-
-	DO_INSTALL=1
-	DO_CONFIGURE=1
+	DO_INSTALL=1; DO_CONFIGURE=1
+	if [ -f "$PKG_DIR/pkg.conf" ]; then selection_parse_pkgconf; fi
 	if [ -f "$PKG_DIR/noinstall" ]; then unset -v DO_INSTALL; fi
 	if [ -f "$PKG_DIR/noconfigure" ]; then unset -v DO_CONFIGURE; fi
 	if [ ! -d "$PKG_DIR/data" ] && [ ! -f "$PKG_DIR/preconfigure" ] && [ ! -f "$PKG_DIR/configure" ]; then unset -v DO_CONFIGURE; fi
 
-	if [ "$DO_CONFIGURE" ]; then SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'; fi
-	if [ "$DO_INSTALL" ]; then INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'; fi
-	if [ ! "$DO_CONFIGURE" ] && [ ! "$DO_INSTALL" ]; then SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; fi
+	if [ "$DO_CONFIGURE" ]; then append_configure_list; fi
+	if [ "$DO_INSTALL" ]; then append_install_list; fi
+	if [ ! "$DO_CONFIGURE" ] && [ ! "$DO_INSTALL" ]; then append_skip_list; fi
 }
 
 read_selected_packages() {
@@ -91,8 +93,8 @@ read_selected_packages() {
 	fi
 
 	# Sort and remove duplicate items in PKG lists
-	REQUESTED_PKGS="$(printf "$REQUESTED_PKGS" | sort -u)"
 	UNDEFINED_PKGS="$(printf "$UNDEFINED_PKGS" | sort -u)"
+	REQUESTED_PKGS="$(printf "$REQUESTED_PKGS" | sort -u)"
 	INSTALL_PKGS="$(printf "$INSTALL_PKGS" | sort -u)"
 	SETUP_PKGS="$(printf "$SETUP_PKGS" | sort -u)"
 	SKIP_PKGS="$(printf "$SKIP_PKGS" | sort -u)"
