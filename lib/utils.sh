@@ -1,13 +1,5 @@
 #!/usr/bin/env sh
 
-print_blue () { printf "$CONFMAN_BLUE$*$CONFMAN_NC"; }
-
-print_red () { printf "$CONFMAN_RED$*$CONFMAN_NC"; }
-
-print_green () { printf "$CONFMAN_GREEN$*$CONFMAN_NC"; }
-
-print_yellow () { printf "$CONFMAN_YELLOW$*$CONFMAN_NC"; }
-
 prompt_continuation_or_exit() {
 	# If CONFMAN_PROMPT is level 1 or level 2
 	if [ "$CONFMAN_PROMPT" -ge 1 ]; then
@@ -22,18 +14,12 @@ prompt_continuation_or_exit() {
 	fi
 }
 
-is_platform_compatible() {
-	if ! [ -r "$1" ]; then
-		confman_log error "the file supplied as argument to function 'is_platform_compatible' cannot be read: $1"
+fix_permission_execute() {
+	if [ ! -f "$1" ]; then
+		confman_log error "the requested file to execute does not exist: \n$1\n"
 		return 1
 	fi
 
-	sed '/^[[:space:]]*$/d' "$1" | while read -r PATTERN; do
-		uname -s | grep -i -q "$PATTERN" && return 0
-	done
-}
-
-fix_permission_execute() {
 	if [ ! -x "$1" ]; then
 		confman_log warning "Adding execute permission to file '$1'"
 		if ! chmod ug+x "$1" 2>/dev/null; then
@@ -44,6 +30,15 @@ fix_permission_execute() {
 
 	"$1"
 }
+
+CONFMAN_RED='\033[1;31m'
+CONFMAN_GREEN='\033[0;32m'
+CONFMAN_YELLOW='\033[0;33m'
+CONFMAN_BLUE='\e[0;36m'
+CONFMAN_NC='\e[0m' # No Color
+CONFMAN_PREFIX_NORMAL='CONFMAN: '
+CONFMAN_PREFIX_WARNING='WARNING: '
+CONFMAN_PREFIX_ERROR='ERROR: '
 
 confman_log () {
 	if [ $# -lt 2 ]; then
@@ -60,7 +55,7 @@ confman_log () {
 		hl_green) shift && printf "${CONFMAN_GREEN}$@${CONFMAN_NC}";;
 		hl_yellow) shift && printf "${CONFMAN_YELLOW}$@${CONFMAN_NC}";;
 		hl_blue) shift && printf "${CONFMAN_BLUE}$@${CONFMAN_NC}";;
-		*) printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}%s${CONFMAN_NC}\n" "the first argument to confman_log has an unsupported value: $1" >&2 && exit 1
+		*) printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}%s${CONFMAN_NC}\n" "the first argument to confman_log has an unsupported value: $1" >&2; exit 1 ;;
 	esac
 }
 

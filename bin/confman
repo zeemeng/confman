@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -e
 
-export CONFMAN_PROMPT CONFMAN_REPO CONFMAN_DEST CONFMAN_MGR PKG
+export CONFMAN_PROMPT CONFMAN_REPO CONFMAN_DEST CONFMAN_MGR CONFMAN_MGR_PROMPT CONFMAN_MGR_OPTS PKG
 
 
 #--- GLOBAL VARIABLES SUBJECT TO CHANGE FROM MAKEFILE ---#
@@ -13,10 +13,11 @@ CONFMAN_VERSION="$(cat "$CONFMAN_ROOT/version")"
 
 
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#
-. "$CONFMAN_LIB_PATH/colors.sh"
 . "$CONFMAN_LIB_PATH/utils.sh"
 . "$CONFMAN_LIB_PATH/validations.sh"
 . "$CONFMAN_LIB_PATH/operations.sh"
+. "$CONFMAN_LIB_PATH/default_ops.sh"
+. "$CONFMAN_LIB_PATH/ini_conf.sh"
 
 
 #--- OTHER GLOBAL VARIABLES ---#
@@ -43,7 +44,7 @@ while getopts "vhHiIcuUxlbL:D:f:m:d:p:r:" OPT; do
 		x) x=1; CUSTOM_OPERATION=1;;
 		l) l=1; CUSTOM_OPERATION=1;;
 		b) BOOTSTRAP_FLAG=1;;
-		L) LOG_LEVEL=$OPTARG; CUSTOM_OPERATION=1;;
+		L) L_OPTARG=$OPTARG; CUSTOM_OPERATION=1;;
 		D) D_OPTARG=$OPTARG;;
 		f) PKG_FILE="$OPTARG";;
 		m) CONFMAN_MGR="$OPTARG";;
@@ -61,11 +62,12 @@ validate_option_combinations
 validate_confman_prompt
 validate_confman_dest
 validate_confman_repo
+evaluate_confmanconf "$CONFMAN_LIB_PATH/managers.conf"
 if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
 
 
 #--- OPERATE ACCORDING TO OPTIONS ---#
-if [ "$LOG_LEVEL" ]; then confman_log "$LOG_LEVEL" "$@"; exit 0; fi
+if [ "$L_OPTARG" ]; then confman_log "$LOG_LEVEL" "$@"; exit 0; fi
 
 if [ "$D_OPTARG" ]; then dispatch_default_op "$@"; exit 0; fi
 
