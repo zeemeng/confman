@@ -2,5 +2,5 @@
 
 # By default apk is non-interactive. See FILES or --interactive on changing this default to be interactive.
 if [ "$CONFMAN_PROMPT" -gt 1 ]; then PROMPT_OPT='--interactive'; fi
-apk $PROMPT_OPT del $EXTRA_OPTS "$PKG" $EXTRA_ARGS
+apk $PROMPT_OPT del $EXTRA_OPTS "$PKG"
 
