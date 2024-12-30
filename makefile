@@ -15,7 +15,13 @@ libdir = $(exec_prefix)/lib/confman
 mandir = $(exec_prefix)/share/man/man1
 
 
-.PHONY: all doc install link uninstall rewind forward reinstall relink clean realclean major minor patch
+# testing related variables
+image ?= debian
+TAG = confman:$(image)
+CONTAINER = confman_$(image)
+
+
+.PHONY: all doc install link uninstall rewind forward reinstall relink clean realclean major minor patch image images container container_new
 .IGNORE: $(MAN) doc
 
 
@@ -113,6 +119,7 @@ clean:
 realclean: clean
 	@printf '\n[make realclean] removing all build artifacts...\n'
 	rm -rf build $(MAN)
+	docker images -q --filter=reference=confman | xargs docker image rm --force
 
 
 major:
@@ -131,4 +138,37 @@ patch:
 	@printf '\n[make patch] bumping patch semantic version...\n'
 	printf "`awk 'BEGIN{FS=OFS="."} /[^[:space:]]/ {print $$1,$$2,$$3+1}' $(VERSION_FILE)`\n" > $(VERSION_FILE)
 	make $(MAN)
+
+
+image:
+	@printf '\n[make image] building image --> $(TAG)\n'
+	docker build -t "$(TAG)" -f "test/docker/$(image).dockerfile" .
+
+	@printf '\n[make image] cleaning intermediate image layers\n'
+	docker image prune -f
+
+images:
+	@printf '\n[make images] building all images\n'
+	for IMG in test/docker/*; do make image image=`basename $$IMG .dockerfile` || exit 1; done
+
+container:
+	@if docker container inspect "$(CONTAINER)"; then \
+		printf '\n[make container] cleaning prior container --> $(CONTAINER)\n'; \
+		docker stop "$(CONTAINER)"; \
+		docker rm -vf "$(CONTAINER)"; \
+	fi >/dev/null 2>&1
+
+	@printf '\n[make container] starting container --> $(CONTAINER)\n'
+	@if docker image inspect "$(TAG)" >/dev/null 2>&1; then \
+		docker run --name "$(CONTAINER)" -it "$(TAG)"; \
+	else \
+		printf "\n[make container] ERROR: Cannot find Docker image --> $(TAG)\n" >&2 && exit 1; \
+	fi
+
+	@printf '\n[make container] stopping container --> $(CONTAINER)\n'
+	@docker stop "$(CONTAINER)" >/dev/null
+
+
+container_new:
+	make image container
 
