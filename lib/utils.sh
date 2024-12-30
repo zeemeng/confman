@@ -1,12 +1,12 @@
 #!/usr/bin/env sh
 
-print_blue () { printf "$CONFMAN_BLUE$@$CONFMAN_NC"; }
+print_blue () { printf "$CONFMAN_BLUE$*$CONFMAN_NC"; }
 
-print_red () { printf "$CONFMAN_RED$@$CONFMAN_NC"; }
+print_red () { printf "$CONFMAN_RED$*$CONFMAN_NC"; }
 
-print_green () { printf "$CONFMAN_GREEN$@$CONFMAN_NC"; }
+print_green () { printf "$CONFMAN_GREEN$*$CONFMAN_NC"; }
 
-print_yellow () { printf "$CONFMAN_YELLOW$@$CONFMAN_NC"; }
+print_yellow () { printf "$CONFMAN_YELLOW$*$CONFMAN_NC"; }
 
 prompt_continuation_or_exit() {
 	# If CONFMAN_PROMPT is level 1 or level 2

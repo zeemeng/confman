@@ -135,7 +135,7 @@ print_selected_packages() {
 
 	# Print header
 	printf "$PRINTF_FORMAT" \
-		"`print_blue Package Name`" \
+		"`print_blue Package`" \
 		"`print_blue Platform`" \
 		"`print_blue Install`" \
 		"`print_blue Uninstall`" \
