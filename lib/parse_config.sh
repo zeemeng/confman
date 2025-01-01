@@ -25,13 +25,13 @@ parse_section () {
 			\[*\]) return;;
 		esac
 
-		if echo "$LINE" | grep -q '^[[:space:]]*='; then
+		if printf '%s\n' "$LINE" | grep -q '^[[:space:]]*='; then
 			confman -L error "invalid key-value pair in file '$PKGCONF', missing key in line:\n$LINE\n"
 			return 1
 		fi
 
-		CONF_KEY="$(echo "$LINE" | sed -E -e 's/^[[:space:]]//' -e 's/[[:space:]]*=.*$//')"
-		CONF_VALUE="$(echo "$LINE" | sed -E -e 's/^[^=]*//' -e 's/=[[:space:]]*//')"
+		CONF_KEY="$(printf '%s\n' "$LINE" | sed -E -e 's/^[[:space:]]//' -e 's/[[:space:]]*=.*$//')"
+		CONF_VALUE="$(printf '%s\n' "$LINE" | sed -E -e 's/^[^=]*//' -e 's/=[[:space:]]*//')"
 		evaluate_${1}_kvpair
 	done
 	EOF=1

@@ -40,18 +40,19 @@ add_bindir_to_PATH () {
 	esac
 }
 
-append_skip_list () { SKIP_PKGS="${SKIP_PKGS}${PKG}"$'\n'; }
-append_undefined_list () { UNDEFINED_PKGS="${UNDEFINED_PKGS}${PKG}"$'\n'; }
-append_requested_list () { REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}"$'\n'; }
-append_install_list () { INSTALL_PKGS="${INSTALL_PKGS}${PKG}"$'\n'; }
-append_configure_list () { SETUP_PKGS="${SETUP_PKGS}${PKG}"$'\n'; }
+append_skip_list () { SKIP_PKGS="${SKIP_PKGS}${PKG}\n"; }
+append_skip_list () { SKIP_PKGS="${SKIP_PKGS}${PKG}\n"; }
+append_undefined_list () { UNDEFINED_PKGS="${UNDEFINED_PKGS}${PKG}\n"; }
+append_requested_list () { REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}\n"; }
+append_install_list () { INSTALL_PKGS="${INSTALL_PKGS}${PKG}\n"; }
+append_configure_list () { SETUP_PKGS="${SETUP_PKGS}${PKG}\n"; }
 
 # Depends on pre-defined variables: CONFMAN_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS
 append_to_pkg_lists() {
 	PKG_DIR="$CONFMAN_REPO/$PKG"
 
 	# Check if PKG contains any non-whitespace character. If it does, continue, otherwise return
-	if ! echo "$PKG" | grep -q "[^[:space:]]"; then return; fi
+	if ! printf '%s\n' "$PKG" | grep -q "[^[:space:]]"; then return; fi
 
 	# PKGs not defined in a confman config repository are not processed
 	if [ ! -d "$PKG_DIR" ]; then append_undefined_list; return 0; fi
