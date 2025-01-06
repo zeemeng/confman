@@ -61,7 +61,7 @@ append_to_pkg_lists() {
 	append_requested_list
 
 	DO_INSTALL=1; DO_CONFIGURE=1
-	if [ -f "$PKG_DIR/pkg.conf" ]; then selection_parse_pkgconf; fi
+	if [ -f "$PKG_DIR/pkg.conf" ]; then evaluate_ini_config --selections; fi
 	if [ -f "$PKG_DIR/noinstall" ]; then unset -v DO_INSTALL; fi
 	if [ -f "$PKG_DIR/noconfigure" ]; then unset -v DO_CONFIGURE; fi
 	if [ ! -d "$PKG_DIR/data" ] && [ ! -f "$PKG_DIR/preconfigure" ] && [ ! -f "$PKG_DIR/configure" ]; then unset -v DO_CONFIGURE; fi
