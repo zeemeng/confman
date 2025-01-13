@@ -10,8 +10,7 @@ evaluate_ini_config () {
 
 	PKGCONF="$CONFMAN_REPO/$PKG/pkg.conf"
 #############
-### debug ###
-# PKGCONF="$2"
+# PKGCONF="$2" ### debug ###
 #############
 
 	while read -r SECTION; do
@@ -31,8 +30,7 @@ evaluate_ini_config () {
 
 evaluate_kvpairs () {
 #############
-### debug ###
-# printf '\n%s\n' "$SECTION"
+# printf '\n%s\n' "$SECTION" ### debug ###
 #############
 
 	unset -v SKIP_SECTION
@@ -40,8 +38,7 @@ evaluate_kvpairs () {
 		PLATFORM_LABEL="$(printf '%s\n' "$SECTION" | sed -E -e 's/^\[platform\.//' -e 's/(\.dependencies|\.environment)?\]$//')"
 		uname -s | grep -i -q "$PLATFORM_LABEL" || SKIP_SECTION=1
 #############
-### debug ###
-# echo "---PLATFORM_LABEL--->>>$PLATFORM_LABEL"
+# echo "---PLATFORM_LABEL--->>>$PLATFORM_LABEL" ### debug ###
 #############
 	esac
 
@@ -116,16 +113,14 @@ evaluate_kvpairs () {
 # Operations time evaluations
 eval_kv_name () {
 #############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
 #############
 	PKG="$CONF_VALUE"
 }
 
 eval_kv_mgr_opts () {
 #############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
 #############
 	CONFMAN_MGR_OPTS="$CONF_VALUE"
 }
@@ -133,8 +128,7 @@ eval_kv_mgr_opts () {
 # Package selection time evaluations
 eval_kv_managers () {
 #############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
 #############
 	case "$CONF_VALUE" in (*${CONFMAN_MGR}*) return 0; esac
 	unset -v DO_INSTALL DO_CONFIGURE
@@ -142,8 +136,7 @@ eval_kv_managers () {
 
 eval_kv_platforms () {
 #############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
 #############
 	for PATTERN in $CONF_VALUE; do uname -s | grep -i -q "$PATTERN" && return 0; done
 	unset -v DO_INSTALL DO_CONFIGURE
@@ -151,24 +144,21 @@ eval_kv_platforms () {
 
 eval_kv_noinstall () {
 #############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
 #############
 	unset -v DO_INSTALL
 }
 
 eval_kv_noconfigure () {
 #############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
 #############
 	unset -v DO_CONFIGURE
 }
 
 ### Testing script commands below ###
 #############
-### debug ###
-# set -e
-# CONFMAN_MGR=brew evaluate_ini_config "$@"
+# set -e ### debug ###
+# CONFMAN_MGR=brew evaluate_ini_config "$@" ### debug ###
 #############
 
