@@ -94,18 +94,15 @@ evaluate_kvpairs () {
 			\[package\])
 				case "$CONF_KEY" in (name) eval_kv_name; esac
 				;;
-			# \[package.environment\]) ;;
 			\[platform.*\])
-				case "$CONF_KEY" in (package) eval_kv_package; esac
+				case "$CONF_KEY" in (name) eval_kv_name; esac
 				;;
-			# \[platform.*.environment\]) ;;
 			\[manager.$CONFMAN_MGR\])
 				case "$CONF_KEY" in
-					package) eval_kv_package ;;
+					name) eval_kv_name ;;
 					mgr_opts) eval_kv_mgr_opts ;;
 				esac
 				;;
-			# \[manager.$CONFMAN_MGR.environment\]) ;;
 		esac
 
 		[ "$MANAGERS_EVALUATION" ] && case "$SECTION" in
@@ -118,14 +115,6 @@ evaluate_kvpairs () {
 
 # Operations time evaluations
 eval_kv_name () {
-#############
-### debug ###
-# echo "$CONF_KEY>>>$CONF_VALUE"
-#############
-	PKG="$CONF_VALUE"
-}
-
-eval_kv_package () {
 #############
 ### debug ###
 # echo "$CONF_KEY>>>$CONF_VALUE"

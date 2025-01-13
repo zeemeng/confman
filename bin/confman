@@ -17,6 +17,7 @@ CONFMAN_VERSION="$(cat "$CONFMAN_ROOT/version")"
 . "$CONFMAN_LIB_PATH/utils.sh"
 . "$CONFMAN_LIB_PATH/validations.sh"
 . "$CONFMAN_LIB_PATH/operations.sh"
+. "$CONFMAN_LIB_PATH/parse_config.sh"
 
 
 #--- OTHER GLOBAL VARIABLES ---#

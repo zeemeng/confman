@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
 if [ "$CONFMAN_PROMPT" -le 1 ]; then PROMPT_OPT='--noconfirm'; fi
-sudo pacman -Rns $PROMPT_OPT $EXTRA_OPTS "$PKG"
+sudo pacman -Rns $PROMPT_OPT $CONFMAN_MGR_OPTS "$PKG"
 
