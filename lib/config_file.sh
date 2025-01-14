@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-evaluate_ini_config () {
+evaluate_pkgconf () {
 	unset -v OPERATIONS_EVALUATION SELECTIONS_EVALUATION MANAGERS_EVALUATION
 	case "$1" in
 		--operations) OPERATIONS_EVALUATION=1 ;;
@@ -159,6 +159,6 @@ eval_kv_noconfigure () {
 ### Testing script commands below ###
 #############
 # set -e ### debug ###
-# CONFMAN_MGR=brew evaluate_ini_config "$@" ### debug ###
+# CONFMAN_MGR=brew evaluate_pkgconf "$@" ### debug ###
 #############
 
