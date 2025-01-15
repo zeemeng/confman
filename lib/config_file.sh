@@ -1,67 +1,65 @@
 #!/usr/bin/env sh
 
-evaluate_pkgconf () {
-	unset -v OPERATIONS_EVALUATION SELECTIONS_EVALUATION MANAGERS_EVALUATION
-	case "$1" in
-		--operations) OPERATIONS_EVALUATION=1 ;;
-		--managers) MANAGERS_EVALUATION=1 ;;
-		*) SELECTIONS_EVALUATION=1 ;;
-	esac
-
-	PKGCONF="$CONFMAN_REPO/$PKG/pkg.conf"
-#############
-# PKGCONF="$2" ### debug ###
-#############
-
-	while read -r SECTION; do
-		EOF=0; while [ 0 = "$EOF" ]; do
-			case "$SECTION" in
-				\[package*\] | \[platform.*\] | \[manager.*\]) ;;
-				\[*\]) confman -L error "unrecognized section in file '$PKGCONF':\n$SECTION\n"; return 1;;
-				*) confman -L error "line without a section in file '$PKGCONF':\n$SECTION\n"; return 1;;
-			esac
-
-			evaluate_kvpairs
-		done
-	done <<-EOF
-		$(sed -e '/^[[:space:]]*$/d' -e '/^[[:space:]]*#.*/d' "$PKGCONF")
-	EOF
+validate_kv_pair () {
+	if printf '%s\n' "$1" | grep -q '^[[:space:]]*='; then
+		confman -L error "invalid key-value pair in file '$2', missing key in line:\n$1\n"
+		return 1
+	fi
 }
 
-evaluate_kvpairs () {
-#############
-# printf '\n%s\n' "$SECTION" ### debug ###
-#############
+parse_conf_key () { printf '%s\n' "$1" | sed -E -e 's/^[[:space:]]//' -e 's/[[:space:]]*=.*$//'; }
 
-	unset -v SKIP_SECTION
-	case "$SECTION" in (\[platform.*\])
-		PLATFORM_LABEL="$(printf '%s\n' "$SECTION" | sed -E -e 's/^\[platform\.//' -e 's/(\.dependencies|\.environment)?\]$//')"
-		uname -s | grep -i -q "$PLATFORM_LABEL" || SKIP_SECTION=1
-#############
-# echo "---PLATFORM_LABEL--->>>$PLATFORM_LABEL" ### debug ###
-#############
+parse_conf_value () { printf '%s\n' "$1" | sed -E -e 's/^[^=]*//' -e 's/=[[:space:]]*//'; }
+
+safe_read_next_line () {
+	read -r "$1" || case "$?" in
+		1) return 0 ;;
+		*) return "$?" ;;
+	esac
+}
+
+system_matches_platform () {
+	set -- "$(printf '%s\n' "$1" | sed -E -e 's/^\[platform\.//' -e 's/(\.dependencies)?\]$//')"
+	#############
+	# echo "---PLATFORM_LABEL--->>>$1" ### debug
+	#############
+	uname -s | grep -i -q "$1"
+}
+
+assign_valid_section_pkgconf () {
+	#############
+	# printf '\n%s\n' "$1" ### debug
+	#############
+	case "$1" in
+		\[package*\] | \[manager.*\]) ;;
+		\[platform.*\])
+			if ! system_matches_platform "$1"; then while read -r LINE; do
+				case "$LINE" in (\[*\])
+					assign_valid_section_pkgconf "$LINE" "$2"
+					return 0
+				esac
+			done; fi
+			;;
+		*) confman -L error "unrecognized section in file '$2':\n$1\n"; return 1 ;;
 	esac
 
+	SECTION="$1"
+}
+
+evaluate_pkgconf_selection () {
+	SECTION=''
 	while read -r LINE; do
-		# Hit the next section's header; return control to outer while loop
 		case "$LINE" in (\[*\])
-			SECTION="$LINE"
-			return 0
-			;;
+			assign_valid_section_pkgconf "$LINE" "$1"
+			safe_read_next_line 'LINE'
 		esac
 
-		# KV-pair syntax validation
-		if printf '%s\n' "$LINE" | grep -q '^[[:space:]]*='; then
-			confman -L error "invalid key-value pair in file '$PKGCONF', missing key in line:\n$LINE\n"
-			return 1
-		fi
+		validate_kv_pair "$LINE" "$1"
+		CONF_KEY="$(parse_conf_key "$LINE")"
+		CONF_VALUE="$(parse_conf_value "$LINE")"
 
-		CONF_KEY="$(printf '%s\n' "$LINE" | sed -E -e 's/^[[:space:]]//' -e 's/[[:space:]]*=.*$//')"
-		CONF_VALUE="$(printf '%s\n' "$LINE" | sed -E -e 's/^[^=]*//' -e 's/=[[:space:]]*//')"
-
-		[ "$SKIP_SECTION" ] && continue
-
-		[ "$SELECTIONS_EVALUATION" ] && case "$SECTION" in
+		case "$SECTION" in
+			'') confman -L error "line without a section in file '$1':\n$1\n"; return 1 ;;
 			# \[package.dependencies\]) ;;
 			\[package\])
 				case "$CONF_KEY" in
@@ -86,8 +84,25 @@ evaluate_kvpairs () {
 				esac
 				;;
 		esac
+	done <<-EOF
+		$(sed -e '/^[[:space:]]*$/d' -e '/^[[:space:]]*#.*/d' "$1")
+	EOF
+}
 
-		[ "$OPERATIONS_EVALUATION" ] && case "$SECTION" in
+evaluate_pkgconf_operation () {
+	SECTION=''
+	while read -r LINE; do
+		case "$LINE" in (\[*\])
+			assign_valid_section_pkgconf "$LINE" "$1"
+			safe_read_next_line 'LINE'
+		esac
+
+		validate_kv_pair "$LINE" "$1"
+		CONF_KEY="$(parse_conf_key "$LINE")"
+		CONF_VALUE="$(parse_conf_value "$LINE")"
+
+		case "$SECTION" in
+			'') confman -L error "line without a section in file '$1':\n$1\n"; return 1 ;;
 			\[package\])
 				case "$CONF_KEY" in (name) eval_kv_name; esac
 				;;
@@ -101,26 +116,56 @@ evaluate_kvpairs () {
 				esac
 				;;
 		esac
+	done <<-EOF
+		$(sed -e '/^[[:space:]]*$/d' -e '/^[[:space:]]*#.*/d' "$1")
+	EOF
+}
 
-		[ "$MANAGERS_EVALUATION" ] && case "$SECTION" in
-			\[manager.platforms\]) ;;
-			\[manager.operations\]) ;;
+assign_valid_section_confmanconf () {
+	#############
+	# printf '\n%s\n' "$1" ### debug
+	#############
+	case "$1" in
+		\[list.*\] | \[manager.*\]) ;;
+		*) confman -L error "unrecognized section in file '$2':\n$1\n"; return 1 ;;
+	esac
+
+	SECTION="$1"
+}
+
+evaluate_confmanconf () {
+	SECTION=''
+	while read -r LINE; do
+		case "$LINE" in (\[*\])
+			assign_valid_section_confmanconf "$LINE" "$1"
+			safe_read_next_line 'LINE'
 		esac
-	done
-	EOF=1
+
+		validate_kv_pair "$LINE" "$1"
+		CONF_KEY="$(parse_conf_key "$LINE")"
+		CONF_VALUE="$(parse_conf_value "$LINE")"
+
+		case "$SECTION" in
+			'') confman -L error "line without a section in file '$1':\n$1\n"; return 1 ;;
+			\[list.*\]) ;;
+			\[manager.*\]) ;;
+		esac
+	done <<-EOF
+		$(sed -e '/^[[:space:]]*$/d' -e '/^[[:space:]]*#.*/d' "$1")
+	EOF
 }
 
 # Operations time evaluations
 eval_kv_name () {
 #############
-# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug
 #############
 	PKG="$CONF_VALUE"
 }
 
 eval_kv_mgr_opts () {
 #############
-# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug
 #############
 	CONFMAN_MGR_OPTS="$CONF_VALUE"
 }
@@ -128,7 +173,7 @@ eval_kv_mgr_opts () {
 # Package selection time evaluations
 eval_kv_managers () {
 #############
-# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug
 #############
 	case "$CONF_VALUE" in (*${CONFMAN_MGR}*) return 0; esac
 	unset -v DO_INSTALL DO_CONFIGURE
@@ -136,7 +181,7 @@ eval_kv_managers () {
 
 eval_kv_platforms () {
 #############
-# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug
 #############
 	for PATTERN in $CONF_VALUE; do uname -s | grep -i -q "$PATTERN" && return 0; done
 	unset -v DO_INSTALL DO_CONFIGURE
@@ -144,21 +189,15 @@ eval_kv_platforms () {
 
 eval_kv_noinstall () {
 #############
-# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug
 #############
 	unset -v DO_INSTALL
 }
 
 eval_kv_noconfigure () {
 #############
-# echo "$CONF_KEY>>>$CONF_VALUE" ### debug ###
+# echo "$CONF_KEY>>>$CONF_VALUE" ### debug
 #############
 	unset -v DO_CONFIGURE
 }
-
-### Testing script commands below ###
-#############
-# set -e ### debug ###
-# CONFMAN_MGR=brew evaluate_pkgconf "$@" ### debug ###
-#############
 

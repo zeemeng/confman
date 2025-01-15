@@ -61,7 +61,7 @@ append_to_pkg_lists() {
 	append_requested_list
 
 	DO_INSTALL=1; DO_CONFIGURE=1
-	if [ -s "$PKG_DIR/pkg.conf" ]; then evaluate_pkgconf --selections; fi
+	if [ -s "$PKG_DIR/pkg.conf" ]; then evaluate_pkgconf_selection "$PKG_DIR/pkg.conf"; fi
 	if [ -f "$PKG_DIR/noinstall" ]; then unset -v DO_INSTALL; fi
 	if [ -f "$PKG_DIR/noconfigure" ]; then unset -v DO_CONFIGURE; fi
 	if [ ! -d "$PKG_DIR/data" ] && [ ! -f "$PKG_DIR/preconfigure" ] && [ ! -f "$PKG_DIR/configure" ]; then unset -v DO_CONFIGURE; fi
@@ -209,7 +209,7 @@ execute_operation() (
 		confman_log info "Performing $DEFAULT_OR_CUSTOM $(print_blue "$1") for $(print_blue "$PKG")"
 	fi
 
-	if [ -s "$CONFMAN_REPO/$PKG/pkg.conf" ]; then evaluate_pkgconf --operations; fi
+	if [ -s "$CONFMAN_REPO/$PKG/pkg.conf" ]; then evaluate_pkgconf_operation "$CONFMAN_REPO/$PKG/pkg.conf"; fi
 
 	if fix_permission_execute "$SCRIPT"; then
 		confman_log success "SUCCESSFULLY performed $DEFAULT_OR_CUSTOM \"$1\" for \"$PKG\"\n"
