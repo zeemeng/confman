@@ -40,12 +40,12 @@ add_bindir_to_PATH () {
 	esac
 }
 
-append_skip_list () { SKIP_PKGS="${SKIP_PKGS}${PKG}\n"; }
-append_skip_list () { SKIP_PKGS="${SKIP_PKGS}${PKG}\n"; }
-append_undefined_list () { UNDEFINED_PKGS="${UNDEFINED_PKGS}${PKG}\n"; }
-append_requested_list () { REQUESTED_PKGS="${REQUESTED_PKGS}${PKG}\n"; }
-append_install_list () { INSTALL_PKGS="${INSTALL_PKGS}${PKG}\n"; }
-append_configure_list () { SETUP_PKGS="${SETUP_PKGS}${PKG}\n"; }
+append_skip_list () { SKIP_PKGS="$(printf '%s\n%s' "$SKIP_PKGS" "$PKG")"; }
+append_skip_list () { SKIP_PKGS="$(printf '%s\n%s' "$SKIP_PKGS" "$PKG")"; }
+append_undefined_list () { UNDEFINED_PKGS="$(printf '%s\n%s' "$UNDEFINED_PKGS" "$PKG")"; }
+append_requested_list () { REQUESTED_PKGS="$(printf '%s\n%s' "$REQUESTED_PKGS" "$PKG")"; }
+append_install_list () { INSTALL_PKGS="$(printf '%s\n%s' "$INSTALL_PKGS" "$PKG")"; }
+append_configure_list () { SETUP_PKGS="$(printf '%s\n%s' "$SETUP_PKGS" "$PKG")"; }
 
 # Depends on pre-defined variables: CONFMAN_REPO, PKG, REQUESTED_PKGS, INSTALL_PKGS, SETUP_PKGS, SKIP_PKGS
 append_to_pkg_lists() {
@@ -225,7 +225,7 @@ dispatch_operation() {
 	case "$1" in
 		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" && execute_operation update; printf '\n';;
 		configure | unconfigure) TARGET_PKGS="$SETUP_PKGS";;
-		*) confman_log error "unrecognized argument value passed to function 'dispatch_operations': $1" && return 1;;
+		*) confman_log error "unrecognized argument value passed to function 'dispatch_operations': $1"; return 1;;
 	esac
 
 	if [ -z "$TARGET_PKGS" ]; then confman_log warning "No package available for $1.. Done."; return 0; fi

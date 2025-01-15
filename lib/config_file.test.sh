@@ -4,7 +4,8 @@
 
 ### Testing script commands below ###
 #############
-set -eu ### debug
-CONFMAN_MGR=apt evaluate_confmanconf "$@" ### debug
+set -e ### debug
+export CONFMAN_MGR
+evaluate_confmanconf "$@" ### debug
 #############
 

@@ -22,17 +22,6 @@ prompt_continuation_or_exit() {
 	fi
 }
 
-is_platform_compatible() {
-	if ! [ -r "$1" ]; then
-		confman_log error "the file supplied as argument to function 'is_platform_compatible' cannot be read: $1"
-		return 1
-	fi
-
-	sed '/^[[:space:]]*$/d' "$1" | while read -r PATTERN; do
-		uname -s | grep -i -q "$PATTERN" && return 0
-	done
-}
-
 fix_permission_execute() {
 	if [ ! -x "$1" ]; then
 		confman_log warning "Adding execute permission to file '$1'"
@@ -60,7 +49,7 @@ confman_log () {
 		hl_green) shift && printf "${CONFMAN_GREEN}$@${CONFMAN_NC}";;
 		hl_yellow) shift && printf "${CONFMAN_YELLOW}$@${CONFMAN_NC}";;
 		hl_blue) shift && printf "${CONFMAN_BLUE}$@${CONFMAN_NC}";;
-		*) printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}%s${CONFMAN_NC}\n" "the first argument to confman_log has an unsupported value: $1" >&2 && exit 1
+		*) printf "${CONFMAN_RED}${CONFMAN_PREFIX_ERROR}%s${CONFMAN_NC}\n" "the first argument to confman_log has an unsupported value: $1" >&2; exit 1 ;;
 	esac
 }
 
