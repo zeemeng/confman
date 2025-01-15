@@ -23,6 +23,11 @@ prompt_continuation_or_exit() {
 }
 
 fix_permission_execute() {
+	if [ ! -f "$1" ]; then
+		confman_log error "the requested file to execute does not exist: \n$1\n"
+		return 1
+	fi
+
 	if [ ! -x "$1" ]; then
 		confman_log warning "Adding execute permission to file '$1'"
 		if ! chmod ug+x "$1" 2>/dev/null; then
