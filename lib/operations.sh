@@ -186,11 +186,11 @@ dispatch_default_op () {
 
 execute_operation () (
 	case "$1" in
-		custom) SCRIPT="$CONFMAN_REPO/$PKG/$2" ;;
+		custom) set -- "$1" "$2" "$CONFMAN_REPO/$PKG/$2" ;;
 		default) case "$2" in
 			update) fix_permission_execute "$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$2"; return 0 ;;
-			configure|unconfigure) SCRIPT="$CONFMAN_LIB_PATH/default_op/$2";;
-			install|uninstall) SCRIPT="$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$2";;
+			configure|unconfigure) set -- "$1" "$2" "$CONFMAN_LIB_PATH/default_op/$2";;
+			install|uninstall) set -- "$1" "$2" "$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$2";;
 		esac ;;
 		*)
 			confman_log error "invalide 1st operand given to function 'execute_operation': \n$1\n"
@@ -201,7 +201,7 @@ execute_operation () (
 
 	if [ -s "$CONFMAN_REPO/$PKG/pkg.conf" ]; then evaluate_pkgconf_operation "$CONFMAN_REPO/$PKG/pkg.conf"; fi
 
-	if fix_permission_execute "$SCRIPT"; then
+	if fix_permission_execute "$3"; then
 		confman_log success "SUCCESSFULLY performed $1 \"$2\" for \"$PKG\"\n"
 	else
 		set -- "$1" "$2" "$?"
@@ -211,36 +211,33 @@ execute_operation () (
 )
 
 dispatch_operation() {
-	unset -v TARGET_PKGS INPUT_DEVICE PKG_DIR
-
 	case "$1" in
-		install | uninstall) TARGET_PKGS="$INSTALL_PKGS" ;;
-		configure | unconfigure) TARGET_PKGS="$SETUP_PKGS" ;;
+		install | uninstall) set -- "$1" "$INSTALL_PKGS" ;;
+		configure | unconfigure) set -- "$1" "$SETUP_PKGS" ;;
 		*) confman_log error "unrecognized argument value passed to function 'dispatch_operations': $1"; return 1 ;;
 	esac
 
-	if [ -z "$TARGET_PKGS" ]; then confman_log warning "No package available for $1.. Done."; return 0; fi
-	confman_log info "Packages selected for $(print_blue "$1"):\n$TARGET_PKGS\n"
+	if [ -z "$2" ]; then confman_log warning "No package available for $1.. Done."; return 0; fi
+	confman_log info "Packages selected for $(print_blue "$1"):\n$2\n"
 	prompt_continuation_or_exit
 
 	# Update/sync back-end package manager repositories. Set options and environment variables
 	case "$1" in ( install | uninstall ) execute_operation default update; printf '\n'; esac
 
 	case "$CONFMAN_PROMPT" in
-		0) INPUT_DEVICE='/dev/null';;
-		*) INPUT_DEVICE='/dev/tty';;
+		0) set -- "$1" "$2" '/dev/null';;
+		*) set -- "$1" "$2" '/dev/tty';;
 	esac
 
-	printf '%s\n' "$TARGET_PKGS" | while read -r PKG; do
-		PKG_DIR="$CONFMAN_REPO/$PKG"
+	printf '%s\n' "$2" | while read -r PKG; do
 		case "$1" in
 			install | configure)
-				if [ -f "$PKG_DIR/pre$1" ]; then execute_operation custom "pre$1"; fi
-				if [ -f "$PKG_DIR/$1" ]; then execute_operation custom "$1"; else execute_operation default "$1"; fi
-				if [ -f "$PKG_DIR/post$1" ]; then execute_operation custom "post$1"; fi;;
+				if [ -f "$CONFMAN_REPO/$PKG/pre$1" ]; then execute_operation custom "pre$1"; fi
+				if [ -f "$CONFMAN_REPO/$PKG/$1" ]; then execute_operation custom "$1"; else execute_operation default "$1"; fi
+				if [ -f "$CONFMAN_REPO/$PKG/post$1" ]; then execute_operation custom "post$1"; fi ;;
 			uninstall | unconfigure)
-				if [ -f "$PKG_DIR/$1" ]; then execute_operation custom "$1"; else execute_operation default "$1"; fi;;
-		esac < "$INPUT_DEVICE"
+				if [ -f "$CONFMAN_REPO/$PKG/$1" ]; then execute_operation custom "$1"; else execute_operation default "$1"; fi ;;
+		esac < "$3"
 	done
 }
 
