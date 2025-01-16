@@ -6,6 +6,6 @@
 #############
 set -e ### debug
 export CONFMAN_MGR
-evaluate_confmanconf "$@" ### debug
+evaluate_pkgconf_selection "$@" ### debug
 #############
 

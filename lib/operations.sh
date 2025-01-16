@@ -130,20 +130,20 @@ print_selected_packages() {
 				if [ -f "$PKG_DIR/no${1#'un'}" ]; then LABEL="$(printf "no ${1#'un'}" | tr '[:lower:]' '[:upper:]')"; fi;;
 		esac
 		case "$LABEL" in
-			'default') print_blue "$LABEL";;
-			NO*) print_red "$LABEL";;
-			*) print_yellow "$LABEL";;
+			'default') confman_log hl_blue "$LABEL";;
+			NO*) confman_log hl_red "$LABEL";;
+			*) confman_log hl_yellow "$LABEL";;
 		esac
 	}
 
 	# Print header
 	printf "$PRINTF_FORMAT" \
-		"`print_blue Package Name`" \
-		"`print_blue Platform`" \
-		"`print_blue Install`" \
-		"`print_blue Uninstall`" \
-		"`print_blue Configure`" \
-		"`print_blue Unconfigure`"
+		"`confman_log hl_blue Package Name`" \
+		"`confman_log hl_blue Platform`" \
+		"`confman_log hl_blue Install`" \
+		"`confman_log hl_blue Uninstall`" \
+		"`confman_log hl_blue Configure`" \
+		"`confman_log hl_blue Unconfigure`"
 	printf '%111s\n' | tr ' ' '='
 
 	# Print PKG rows
@@ -153,12 +153,12 @@ print_selected_packages() {
 		PKG_DIR="$CONFMAN_REPO/$PKG"
 
 		# "Package Name" column
-		PKG_COLUMN="$(print_blue "$PKG")"
+		PKG_COLUMN="$(confman_log hl_blue "$PKG")"
 
 		# "Platform" column
-		PLATFORM_COLUMN=`print_green All`
+		PLATFORM_COLUMN=`confman_log hl_green All`
 		if [ -f "$PKG_DIR/platform" ]; then
-			PLATFORM_COLUMN=`print_yellow "$(sed -E -e ':a' -e 'N' -e '$!ba' -e 's/\n+/,/g; s/,$//' "$PKG_DIR/platform")"`
+			PLATFORM_COLUMN=`confman_log hl_yellow "$(sed -E -e ':a' -e 'N' -e '$!ba' -e 's/\n+/,/g; s/,$//' "$PKG_DIR/platform")"`
 		fi
 
 		# "Install", "Uninstall", "Configure", "Unconfigure" columns
@@ -185,29 +185,31 @@ dispatch_default_op () {
 }
 
 execute_operation () (
-	case "$1" in
-		custom) set -- "$1" "$2" "$CONFMAN_REPO/$PKG/$2" ;;
-		default) case "$2" in
-			update) fix_permission_execute "$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$2"; return 0 ;;
-			configure|unconfigure) set -- "$1" "$2" "$CONFMAN_LIB_PATH/default_op/$2";;
-			install|uninstall) set -- "$1" "$2" "$CONFMAN_LIB_PATH/mgr/$CONFMAN_MGR/$2";;
-		esac ;;
-		*)
-			confman_log error "invalide 1st operand given to function 'execute_operation': \n$1\n"
-			return 1
+	case "$2" in
+		update) default_update; return 0 ;;
+		preinstall|install|postinstall|uninstall|preconfigure|configure|postconfigure|unconfigure) ;;
+		*) confman_log error "invalide 2nd operand given to function 'execute_operation': \n$2\n"; return 1 ;;
 	esac
 
-	if [ ! "$D_OPTARG" ]; then confman_log info "Performing $1 $(print_blue "$2") for $(print_blue "$PKG")"; fi
+	if [ ! "$D_OPTARG" ]; then confman_log info "Performing $1 $(confman_log hl_blue "$2") for $(confman_log hl_blue "$PKG")"; fi
 
-	if [ -s "$CONFMAN_REPO/$PKG/pkg.conf" ]; then evaluate_pkgconf_operation "$CONFMAN_REPO/$PKG/pkg.conf"; fi
+	# Saving the orginal $PKG as positional parameter since $PKG might be mutated by `evaluate_pkgconf_operation`
+	set -- "$1" "$2" "$PKG"
+	if [ -s "$CONFMAN_REPO/$3/pkg.conf" ]; then evaluate_pkgconf_operation "$CONFMAN_REPO/$3/pkg.conf"; fi
 
-	if fix_permission_execute "$3"; then
-		confman_log success "SUCCESSFULLY performed $1 \"$2\" for \"$PKG\"\n"
-	else
-		set -- "$1" "$2" "$?"
-		confman_log error "An error occured during $1 \"$2\" for \"$PKG\"\n"
-		return "$3"
-	fi
+	case "$1" in
+		custom)
+			if fix_permission_execute "$CONFMAN_REPO/$3/$2"; then
+				confman_log success "SUCCESSFULLY performed $1 \"$2\" for \"$3\"\n"
+			else
+				set -- "$1" "$2" "$3" "$?"
+				confman_log error "An error occured during $1 \"$2\" for \"$3\"\n"
+				return "$4"
+			fi
+			;;
+		default) "default_$2" "$3" ;; # provide the original $PKG value as operand for configure-type operations
+		*) confman_log error "invalide 1st operand given to function 'execute_operation': \n$1\n"; return 1 ;;
+	esac
 )
 
 dispatch_operation() {
@@ -218,7 +220,7 @@ dispatch_operation() {
 	esac
 
 	if [ -z "$2" ]; then confman_log warning "No package available for $1.. Done."; return 0; fi
-	confman_log info "Packages selected for $(print_blue "$1"):\n$2\n"
+	confman_log info "Packages selected for $(confman_log hl_blue "$1"):\n$2\n"
 	prompt_continuation_or_exit
 
 	# Update/sync back-end package manager repositories. Set options and environment variables

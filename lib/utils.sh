@@ -1,13 +1,5 @@
 #!/usr/bin/env sh
 
-print_blue () { printf "$CONFMAN_BLUE$@$CONFMAN_NC"; }
-
-print_red () { printf "$CONFMAN_RED$@$CONFMAN_NC"; }
-
-print_green () { printf "$CONFMAN_GREEN$@$CONFMAN_NC"; }
-
-print_yellow () { printf "$CONFMAN_YELLOW$@$CONFMAN_NC"; }
-
 prompt_continuation_or_exit() {
 	# If CONFMAN_PROMPT is level 1 or level 2
 	if [ "$CONFMAN_PROMPT" -ge 1 ]; then
@@ -38,6 +30,15 @@ fix_permission_execute() {
 
 	"$1"
 }
+
+CONFMAN_RED='\033[1;31m'
+CONFMAN_GREEN='\033[0;32m'
+CONFMAN_YELLOW='\033[0;33m'
+CONFMAN_BLUE='\e[0;36m'
+CONFMAN_NC='\e[0m' # No Color
+CONFMAN_PREFIX_NORMAL='CONFMAN: '
+CONFMAN_PREFIX_WARNING='WARNING: '
+CONFMAN_PREFIX_ERROR='ERROR: '
 
 confman_log () {
 	if [ $# -lt 2 ]; then

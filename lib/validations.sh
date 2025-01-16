@@ -34,11 +34,7 @@ validate_option_combinations() {
 }
 
 validate_pkg_manager() {
-	if [ -z "$CONFMAN_MGR" ]; then
-		for MGR_DIR in $(ls -d "$CONFMAN_LIB_PATH/mgr/"*); do
-			evaluate_confmanconf "$MGR_DIR/confman.conf"
-		done
-	elif ! command -v "$CONFMAN_MGR" >/dev/null; then
+	if ! command -v "$CONFMAN_MGR" >/dev/null; then
 		confman_log error "No suitable package manager was found."
 		exit 1
 	fi
