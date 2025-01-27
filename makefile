@@ -148,9 +148,11 @@ image:
 	@printf '\n[make image] cleaning intermediate image layers\n'
 	docker image prune -f
 
+
 images:
 	@printf '\n[make images] building all images\n'
 	for IMG in test/e2e/docker/*; do make image image=`basename $$IMG .dockerfile` || exit 1; done
+
 
 container:
 	@if docker container inspect "$(CONTAINER)"; then \
@@ -170,6 +172,6 @@ container:
 	@docker stop "$(CONTAINER)" >/dev/null
 
 
-container_new:
+new_container:
 	make image container
 
