@@ -53,6 +53,7 @@ $(EXE): $(EXE:build%=bin%) makefile
 	-e 's:^CONFMAN_LIB_PATH=.*$$:CONFMAN_LIB_PATH=$(libdir):' \
 	-e 's:^CONFMAN_MAN_PATH=.*$$:CONFMAN_MAN_PATH=$(mandir):' \
 	-e "s:^CONFMAN_VERSION=.*$$:CONFMAN_VERSION=`cat "$(VERSION_FILE)"`:" \
+	-e "s:^CONFMAN_USAGE=.*$$:CONFMAN_USAGE='`awk '/^# SYNOPSIS$$/{p=1; next} p && /^$$/{exit} p' doc/confman.1.md | sed -E -e 's/\*+([^*[:space:]]+)\*+/\1/g'`':" \
 	'bin/$(@F)' > '$@'
 	chmod 755 '$@'
 

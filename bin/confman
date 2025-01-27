@@ -10,6 +10,7 @@ CONFMAN_BIN_PATH="$CONFMAN_ROOT/bin"
 CONFMAN_LIB_PATH="$CONFMAN_ROOT/lib"
 CONFMAN_MAN_PATH="$CONFMAN_ROOT/doc"
 CONFMAN_VERSION="$(cat "$CONFMAN_ROOT/version")"
+CONFMAN_USAGE="$(awk '/^# SYNOPSIS$/{p=1; next} p && /^$/{exit} p' "$CONFMAN_ROOT/doc/confman.1.md" | sed -E -e 's/\*+([^*[:space:]]+)\*+/\1/g' -e 's/\\//g')"
 
 
 #--- IMPORT FUNCTIONS FROM OTHER SCRIPTS ---#

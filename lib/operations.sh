@@ -1,16 +1,7 @@
 #!/usr/bin/env sh
 
 print_usage_exit() {
-	cat <<- EOF
-	USAGE:
-	confman [-iIcb] [-m pkg_mgr] [-d config_dest] [-r config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
-	confman [-uUxb] [-m pkg_mgr] [-d config_dest] [-r config_repo] [-p prompt_lvl] [-f pkg_list] [package ...]
-	confman [-l] [-f pkg_list] [package ...]
-	confman -D default_op [-m pkg_mgr] [-d config_dest] [-r config_repo] [-p prompt_lvl] [package]
-	confman -L log_lvl log_msg
-	confman [-vhH]
-
-	EOF
+	printf '%s\n%s\n\n' 'USAGE:' "$CONFMAN_USAGE"
 	exit 1
 }
 
