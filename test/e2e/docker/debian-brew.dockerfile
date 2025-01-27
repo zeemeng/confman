@@ -18,7 +18,7 @@ RUN <<-EOF
   make install
 EOF
 USER tester
-COPY test/.confman /home/tester/.confman
+COPY test/e2e/data/.confman /home/tester/.confman
 ENV CONFMAN_MGR=brew
 CMD [ "bash" ]
 

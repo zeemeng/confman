@@ -142,14 +142,14 @@ patch:
 
 image:
 	@printf '\n[make image] building image --> $(TAG)\n'
-	docker build -t "$(TAG)" -f "test/docker/$(image).dockerfile" .
+	docker build -t "$(TAG)" -f "test/e2e/docker/$(image).dockerfile" .
 
 	@printf '\n[make image] cleaning intermediate image layers\n'
 	docker image prune -f
 
 images:
 	@printf '\n[make images] building all images\n'
-	for IMG in test/docker/*; do make image image=`basename $$IMG .dockerfile` || exit 1; done
+	for IMG in test/e2e/docker/*; do make image image=`basename $$IMG .dockerfile` || exit 1; done
 
 container:
 	@if docker container inspect "$(CONTAINER)"; then \
