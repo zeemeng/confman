@@ -31,7 +31,7 @@ CONFMAN_MGR="${CONFMAN_MGR-}"
 
 #--- PARSE OPTIONS ---#
 OPTIND=1 # Reset OPTIND to 1 to clear any value potentially set by previous invocations of "getopts", as a safety measure.
-unset CUSTOM_OPERATION BOOTSTRAP_FLAG LOG_LEVEL D_OPTARG PKG_FILE
+unset CUSTOM_OPERATION BOOTSTRAP_FLAG L_OPTARG D_OPTARG PKG_FILE
 while getopts "vhHiIcuUxlbL:D:f:m:d:p:r:" OPT; do
 	case "$OPT" in
 		v) print_version_exit;;
@@ -46,7 +46,7 @@ while getopts "vhHiIcuUxlbL:D:f:m:d:p:r:" OPT; do
 		l) l=1; CUSTOM_OPERATION=1;;
 		b) BOOTSTRAP_FLAG=1;;
 		L) L_OPTARG=$OPTARG; CUSTOM_OPERATION=1;;
-		D) D_OPTARG=$OPTARG;;
+		D) D_OPTARG=$OPTARG; CUSTOM_OPERATION=1;;
 		f) PKG_FILE="$OPTARG";;
 		m) CONFMAN_MGR="$OPTARG";;
 		d) CONFMAN_DEST="$OPTARG";;
@@ -64,11 +64,11 @@ validate_confman_prompt
 validate_confman_dest
 validate_confman_repo
 evaluate_confmanconf "$CONFMAN_LIB_PATH/managers.conf"
-if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ]; then validate_pkg_manager; fi
+if [ -z "$CUSTOM_OPERATION" ] || [ "$i" ] || [ "$I" ] || [ "$u" ] || [ "$U" ] || [ 'update' = "$D_OPTARG" ] || [ 'install' = "$D_OPTARG" ] || [ 'uninstall' = "$D_OPTARG" ]; then validate_pkg_manager; fi
 
 
 #--- OPERATE ACCORDING TO OPTIONS ---#
-if [ "$L_OPTARG" ]; then confman_log "$LOG_LEVEL" "$@"; exit 0; fi
+if [ "$L_OPTARG" ]; then confman_log "$L_OPTARG" "$@"; exit 0; fi
 
 if [ "$D_OPTARG" ]; then dispatch_default_op "$@"; exit 0; fi
 
